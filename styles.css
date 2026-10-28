@@ -5,7 +5,8 @@
   --texto: #16263D;
   --texto-suave: #5B6878;
   --borde: #E1E7EE;
-  --acento: #2BA3C9;
+  --acento: #16263D;   /* azul noche del logo */
+  --punto: #F2A93B;    /* el punto naranja del logo */
   --pista: #E6ECF2;
   --esqueleto: #E9EEF3;
 
@@ -28,6 +29,7 @@
     --borde: #263345;
     --pista: #2A3748;
     --esqueleto: #223042;
+    --acento: #E8EEF5;
 
     --verde: #4CC27E;
     --ambar: #E3A948;
@@ -69,12 +71,17 @@ body {
   flex-shrink: 0;
 }
 
+/* Igual que el logo: sans gruesa con las letras juntas */
 h1 {
-  font-family: var(--serifa);
-  font-size: 2rem;
+  font-family: "Inter Display", Inter, var(--sans);
+  font-weight: 700;
+  font-size: 2.2rem;
+  letter-spacing: -0.03em;
   line-height: 1.1;
   margin: 0 0 4px;
 }
+
+h1 .punto { color: var(--punto); }
 
 .resumen {
   margin: 0;

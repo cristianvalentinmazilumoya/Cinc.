@@ -1,7 +1,7 @@
 {
-  "name": "Notas DAW1",
-  "short_name": "Notas DAW1",
-  "description": "Mis notas de 1.º de DAW por módulo",
+  "name": "Cinc",
+  "short_name": "Cinc",
+  "description": "Cinc: mis notas de 1.º de DAW por módulo",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

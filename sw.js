@@ -1,8 +1,8 @@
-// Service worker sencillo: guarda los archivos de la página para que
+// Service worker de Cinc: guarda los archivos de la página para que
 // abra aunque no haya conexión. Los datos de la hoja NO se guardan aquí
 // (las peticiones a Google pasan de largo).
 
-const CACHE = 'notas-daw1-v1';
+const CACHE = 'cinc-v2';
 
 const ARCHIVOS = [
   './',

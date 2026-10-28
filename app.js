@@ -1,5 +1,5 @@
 // ============================================================
-//  Notas DAW1 — lee la hoja de Google y calcula las medias
+//  Cinc — lee la hoja de Google y calcula las medias
 // ============================================================
 
 // URL de la aplicación web de Apps Script (README, paso 1).
