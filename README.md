@@ -1,6 +1,6 @@
 # Cinc
 
-Cinc es una app web (PWA) para consultar mis notas de 1.º de DAW. Solo lectura: las notas se escriben en la hoja de Google `notas_DAW1` y la app las lee a través de un Apps Script.
+Cinc es una app web (PWA) para consultar mis notas de 1.º de DAW. Solo lectura: las notas se escriben en la hoja de Google `Cinc - DAW 1` y la app las lee a través de un Apps Script.
 
 ## Archivos
 
@@ -18,7 +18,7 @@ Cinc es una app web (PWA) para consultar mis notas de 1.º de DAW. Solo lectura:
 
 ## Paso 1 · Publicar el Apps Script
 
-1. Abre la hoja `notas_DAW1` en Google Sheets.
+1. Abre la hoja `Cinc - DAW 1` en Google Sheets.
 2. Menú **Extensiones → Apps Script**. Se abre un editor con un archivo `Código.gs`.
 3. Borra lo que haya y pega el contenido de `apps-script/Code.gs`. Pulsa el icono de guardar (💾).
 4. Arriba a la derecha: **Implementar → Nueva implementación**.
@@ -90,4 +90,4 @@ Los repartos están en la lista `MODULOS` al principio de `app.js`.
 
 ## Cuando cambies la app
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v3` → `cinc-v4`) para que los móviles con la app instalada descarguen la versión nueva.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v4` → `cinc-v5`) para que los móviles con la app instalada descarguen la versión nueva.

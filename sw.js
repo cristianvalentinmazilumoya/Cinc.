@@ -2,7 +2,7 @@
 // abra aunque no haya conexión. Los datos de la hoja NO se guardan aquí
 // (las peticiones a Google pasan de largo).
 
-const CACHE = 'cinc-v3';
+const CACHE = 'cinc-v4';
 
 const ARCHIVOS = [
   './',

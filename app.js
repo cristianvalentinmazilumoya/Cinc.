@@ -352,7 +352,7 @@ async function cargar() {
     } else {
       document.getElementById('modulos').innerHTML = '';
       document.getElementById('resumen').textContent = 'No hay datos.';
-      mostrarAviso('No se ha podido leer la hoja notas_DAW1. Comprueba la conexión y vuelve a abrir la página.', true);
+      mostrarAviso('No se ha podido leer la hoja Cinc - DAW 1. Comprueba la conexión y vuelve a abrir la página.', true);
     }
   }
 }
