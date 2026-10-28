@@ -90,4 +90,4 @@ Los repartos están en la lista `MODULOS` al principio de `app.js`.
 
 ## Cuando cambies la app
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v4` → `cinc-v5`) para que los móviles con la app instalada descarguen la versión nueva.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v5` → `cinc-v6`) para que los móviles con la app instalada descarguen la versión nueva.

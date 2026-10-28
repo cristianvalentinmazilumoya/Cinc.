@@ -2,7 +2,7 @@
 // abra aunque no haya conexión. Los datos de la hoja NO se guardan aquí
 // (las peticiones a Google pasan de largo).
 
-const CACHE = 'cinc-v4';
+const CACHE = 'cinc-v5';
 
 const ARCHIVOS = [
   './',
@@ -47,6 +47,11 @@ self.addEventListener('fetch', evento => {
   evento.respondWith(
     fetch(evento.request)
       .then(respuesta => {
+        // Si el servidor da error (por ejemplo un 404 mientras GitHub publica),
+        // no se guarda y se usa la copia que ya había
+        if (!respuesta.ok) {
+          return caches.match(evento.request).then(guardada => guardada || respuesta);
+        }
         const copia = respuesta.clone();
         caches.open(CACHE).then(cache => cache.put(evento.request, copia));
         return respuesta;
