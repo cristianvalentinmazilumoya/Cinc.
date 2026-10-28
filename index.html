@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notas DAW1</title>
+  <meta name="description" content="Mis notas de 1.º de DAW por módulo">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0F1722" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Notas DAW1">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="pagina">
+    <header class="cabecera">
+      <img class="logo" src="icons/favicon.svg" alt="" width="48" height="48">
+      <div>
+        <h1>Notas DAW1</h1>
+        <p id="resumen" class="resumen">Cargando notas…</p>
+      </div>
+    </header>
+
+    <p id="aviso" class="aviso" hidden></p>
+
+    <section aria-labelledby="titulo-modulos">
+      <h2 id="titulo-modulos" class="titulo-seccion">Módulos</h2>
+      <div id="modulos" class="rejilla">
+        <!-- Esqueleto mientras se cargan los datos -->
+        <div class="tarjeta esqueleto"></div>
+        <div class="tarjeta esqueleto"></div>
+        <div class="tarjeta esqueleto"></div>
+        <div class="tarjeta esqueleto"></div>
+        <div class="tarjeta esqueleto"></div>
+        <div class="tarjeta esqueleto"></div>
+      </div>
+    </section>
+
+    <section id="detalle" class="detalle" aria-live="polite"></section>
+
+    <footer class="pie">
+      Las notas vienen en directo de tu hoja <strong>notas_DAW1</strong>.
+      Para añadir o cambiar una nota, escríbela en la hoja y vuelve a abrir esta página.
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

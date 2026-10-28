@@ -1,0 +1,5 @@
+.DS_Store
+# Contiene tus notas reales: no se sube a GitHub
+datos-ejemplo.json
+# Configuración local del editor
+.claude/
