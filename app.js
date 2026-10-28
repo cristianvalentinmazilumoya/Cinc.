@@ -49,21 +49,44 @@ function aNumero(valor) {
   return Number.isNaN(numero) ? null : numero;
 }
 
-// Convierte las filas de la hoja en objetos. La primera fila son las cabeceras.
+// "Módulo" → "modulo", para comparar cabeceras sin tildes ni mayúsculas
+function normalizar(texto) {
+  return String(texto || '').trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+// Convierte las filas de la hoja en objetos. Las columnas se buscan por el
+// nombre de su cabecera, así da igual en qué orden estén en la hoja.
 function leerFilas(filas) {
+  const filaCabecera = filas.findIndex(f => f.some(c => normalizar(c) === 'modulo'));
+  if (filaCabecera === -1) throw new Error('No encuentro la cabecera «Módulo»');
+
+  const cabeceras = filas[filaCabecera].map(normalizar);
+  const columna = nombre => cabeceras.findIndex(c => c.startsWith(nombre));
+  const col = {
+    modulo: columna('modulo'),
+    tipo: columna('tipo'),
+    actividad: columna('actividad'),
+    nota: columna('nota'),
+    peso: columna('peso'),          // opcional: si no está, cada nota pesa 1
+    comentario: columna('comentario')
+  };
+  const celda = (fila, i) => (i === -1 ? '' : String(fila[i] ?? '').trim());
+
   const actividades = [];
 
-  for (let i = 1; i < filas.length; i++) {
-    const [modulo, tipo, actividad, nota, peso, comentario] = filas[i];
-    if (!modulo || String(modulo).trim() === '') continue;   // fila vacía
+  for (let i = filaCabecera + 1; i < filas.length; i++) {
+    const fila = filas[i];
+    const modulo = celda(fila, col.modulo);
+    if (modulo === '') continue;   // fila vacía
 
     actividades.push({
-      modulo: String(modulo).trim(),
-      tipo: String(tipo || '').trim(),
-      actividad: String(actividad || '').trim(),
-      nota: aNumero(nota),
-      peso: aNumero(peso) ?? 1,
-      comentario: String(comentario || '').trim()
+      modulo: modulo,
+      tipo: celda(fila, col.tipo),
+      actividad: celda(fila, col.actividad),
+      nota: aNumero(celda(fila, col.nota)),
+      peso: aNumero(celda(fila, col.peso)) ?? 1,
+      comentario: celda(fila, col.comentario)
     });
   }
 
@@ -118,7 +141,8 @@ function agruparPorModulo(actividades) {
   const lista = MODULOS.map(m => ({ ...m, actividades: [] }));
 
   for (const a of actividades) {
-    let modulo = lista.find(m => m.nombre === a.modulo);
+    // En la hoja el módulo puede estar escrito con la sigla (PRG) o con el nombre completo
+    let modulo = lista.find(m => m.sigla === a.modulo.toUpperCase() || m.nombre === a.modulo);
     if (!modulo) {
       // Un módulo que no está en la lista: se añade al final
       modulo = { nombre: a.modulo, sigla: a.modulo.slice(0, 4).toUpperCase(), actividades: [] };
@@ -239,7 +263,7 @@ function pintarDetalle() {
           ${barra(a.nota)}
         </div>
       </td>
-      <td class="col-comentario comentario">${escapar(a.comentario)}</td>
+      <td class="col-comentario comentario">${escapar(a.comentario || (a.nota === null ? 'Pendiente' : ''))}</td>
     </tr>`).join('');
 
   document.getElementById('detalle').innerHTML = `
