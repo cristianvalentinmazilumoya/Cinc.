@@ -1,7 +1,7 @@
 // Service worker de Cinc: guarda los archivos de la página para que
 // abra aunque no haya conexión.
 
-const CACHE = 'cinc-v14';
+const CACHE = 'cinc-v15';
 
 const ARCHIVOS = [
   './',

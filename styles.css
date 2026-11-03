@@ -583,7 +583,6 @@ h1 .punto { color: var(--punto); }
 /* ---------- Reparto oficial: barra partida ---------- */
 .dato-reparto { grid-column: 1 / -1; }   /* siempre en su propia fila */
 
-.reparto { max-width: 440px; }
 
 .reparto-barra {
   display: flex;
