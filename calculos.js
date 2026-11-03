@@ -43,11 +43,15 @@ function aNumero(valor) {
 // Devuelve un aviso si los porcentajes no cuadran. «valeEnLaNota» es lo que
 // vale el grupo en el reparto del módulo (null si no tiene reparto).
 function asignarPesos(notas, nombreGrupo, valeEnLaNota) {
-  const hayPorcentajes = notas.some(a => a.porcentaje !== null);
+  // Una nota con 0 % no cuenta nunca (por ejemplo, una prueba inicial que solo
+  // sirve de diagnóstico). Las demás siguen las reglas de arriba.
+  const hayPorcentajes = notas.some(a => a.porcentaje > 0);
 
   for (const a of notas) {
+    a.ceroPorCiento = a.porcentaje === 0;
     a.faltaPorcentaje = hayPorcentajes && a.porcentaje === null;
-    a.peso = hayPorcentajes ? (a.porcentaje ?? 0) : 1;
+    if (a.ceroPorCiento) a.peso = 0;
+    else a.peso = hayPorcentajes ? (a.porcentaje ?? 0) : 1;
   }
 
   const asignado = notas.reduce((suma, a) => suma + (a.porcentaje ?? 0), 0);
@@ -73,7 +77,7 @@ function asignarPesos(notas, nombreGrupo, valeEnLaNota) {
 function porcentajeEvaluado(notas) {
   const conNota = notas.filter(a => a.nota !== null);
   if (conNota.length === 0) return 0;
-  if (!notas.some(a => a.porcentaje !== null)) return null;
+  if (!notas.some(a => a.porcentaje > 0)) return null;
   const suma = conNota.reduce((total, a) => total + (a.porcentaje ?? 0), 0);
   return Math.min(suma, 100);
 }

@@ -424,7 +424,7 @@ function pintarDetalle() {
 
   const filas = ordenadas.map(a => {
     // Una nota no cuenta si aún no está puesta, si le falta el porcentaje o si ya está recuperada
-    const noCuenta = a.nota === null || a.faltaPorcentaje || a.recuperadaCon;
+    const noCuenta = a.nota === null || a.faltaPorcentaje || a.ceroPorCiento || a.recuperadaCon;
     let porcentaje = '';
     if (a.porcentaje !== null) {
       porcentaje = `<span class="porcentaje">${formatoPorcentaje.format(a.porcentaje)} %</span>`;
@@ -436,6 +436,7 @@ function pintarDetalle() {
     if (a.recuperadaCon) estado = `Recuperada con «${a.recuperadaCon}»` + (a.comentario ? ` · ${a.comentario}` : '');
     else if (!estado && a.nota === null) estado = 'Pendiente';
     else if (!estado && a.faltaPorcentaje) estado = 'No cuenta en la media hasta que tenga porcentaje';
+    else if (!estado && a.ceroPorCiento) estado = 'Vale 0 %: no cuenta en la media';
 
     const detalles = [];
     if (a.fecha) detalles.push(formatearFecha(a.fecha));
@@ -823,7 +824,7 @@ function explicarPorcentaje() {
   document.getElementById('ayuda-porcentaje').textContent =
     ` cuánto vale esta nota dentro de ${grupo} (${todas} suman 100 %). ` +
     `Si no lo pones en ${ninguna}, ${todos} cuentan lo mismo; si lo pones solo en ${algunos}, ` +
-    `${las} que no lo tengan no cuentan.`;
+    `${las} que no lo tengan no cuentan. Un 0 % significa que esta nota no cuenta.`;
 }
 
 formNota.modulo.addEventListener('change', explicarPorcentaje);
@@ -862,7 +863,7 @@ formNota.addEventListener('submit', evento => {
     actividad: actividad,
     tipo: formNota.tipo.value,
     nota: nota,
-    porcentaje: porcentaje === 0 ? null : porcentaje,   // 0 % = sin indicar: no cuenta
+    porcentaje: porcentaje,   // 0 % = no cuenta en la media
     comentario: formNota.comentario.value.trim(),
     fecha: fecha || null,
     recuperaDe: formNota.recuperaDe.value || null

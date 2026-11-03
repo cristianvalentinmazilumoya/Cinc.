@@ -78,6 +78,10 @@ caso('Porcentajes', 'nota sin % entre otras con %: no cuenta',
   redondear(modulo(R6040, [examen(9), actividad(8, 20), actividad(9)]).mediaPracticas), 8);
 caso('Porcentajes', 'más del 100 %: hay aviso',
   modulo(R6040, [examen(9), actividad(8, 60), actividad(6, 60)]).avisos.length, 1);
+caso('Porcentajes', 'nota que vale 0 %: no cuenta (y las demás valen lo mismo)',
+  redondear(modulo({ examenes: 100, practicas: 0 }, [examen(9, 0), examen(6), examen(8)]).mediaExamenes), 7);
+caso('Porcentajes', 'nota que vale 0 % con otras con porcentaje',
+  redondear(modulo({ examenes: 100, practicas: 0 }, [examen(2, 0), examen(6, 40), examen(8, 60)]).mediaExamenes), 7.2);
 caso('Porcentajes', 'un 0 cuenta como nota (no como pendiente)',
   redondear(modulo(R6040, [examen(0), actividad(10)]).media), 4);
 
