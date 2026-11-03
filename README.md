@@ -29,9 +29,9 @@ La primera vez que se abre esta versión, si el navegador aún tenía las notas 
 
 ## Cómo se calculan las medias
 
-- **Porcentaje de cada actividad:** al añadir una nota se puede indicar cuánto vale en la nota final del módulo, como lo publica el profesor. Por ejemplo, en un módulo 60 % exámenes / 40 % prácticas, tres prácticas de 10 %, 10 % y 20 %. Si en un grupo (exámenes o prácticas) hay actividades con porcentaje, las que no lo tienen quedan pendientes y no cuentan en la media. Si ninguna lo tiene, todas valen lo mismo.
-- **Media de exámenes / prácticas:** media ponderada (nota × porcentaje / suma de porcentajes) de las actividades que ya tienen nota y porcentaje.
-- **Media del módulo:** si el módulo tiene reparto oficial (por ejemplo DIW 60/40), se combinan las dos medias con esos porcentajes, usando solo los grupos que ya tienen nota. Sin reparto, es la media ponderada de todas sus notas.
+- **Porcentaje de cada actividad:** al añadir una nota se puede indicar cuánto vale dentro de su grupo: dentro de los exámenes o de las prácticas si el módulo tiene reparto, o dentro de todo el módulo si no lo tiene. En cada grupo los porcentajes suman 100 % (por ejemplo, tres prácticas de 20 %, 30 % y 50 %). Si en un grupo hay actividades con porcentaje, las que no lo tienen no cuentan en la media. Si ninguna lo tiene, todas valen lo mismo.
+- **Media de exámenes / prácticas:** media ponderada (nota × porcentaje / suma de porcentajes) de las actividades que ya tienen nota, en proporción. Si de 20 %, 30 % y 50 % solo hay nota de las dos primeras, la media se calcula con esas dos como si fueran el 100 % y la app indica «sobre el 50 % evaluado». Cuando llega la tercera, la media pasa a ser sobre el 100 %.
+- **Media del módulo:** si el módulo tiene reparto oficial (por ejemplo DIW 60/40), se combinan las dos medias con esos porcentajes. Si solo uno de los dos grupos tiene nota, la media del módulo es la de ese grupo y se marca como provisional. Sin reparto, es la media ponderada de todas sus notas.
 - **Media del curso:** media simple de las medias de los módulos que tienen nota.
 
 ## Probar en el Mac
@@ -48,7 +48,7 @@ Y abre http://localhost:8000. Para pararlo: `Ctrl + C`.
 
 La web se publica con GitHub Pages desde la rama `main`. Al hacer push a `main`, en un minuto está en línea.
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v11` → `cinc-v12`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v12` → `cinc-v13`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
 
 ## Instalarla
 

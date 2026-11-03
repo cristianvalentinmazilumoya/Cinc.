@@ -571,3 +571,20 @@ h1 .punto { color: var(--punto); }
 .porcentaje.falta { color: var(--ambar); font-weight: 600; }
 
 .aviso-modulo { margin: -8px 0 16px; }
+
+/* «sobre el 50 % evaluado» y «provisional» junto a una media incompleta */
+.sobre {
+  display: block;
+  font-size: .75rem;
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+
+.provisional {
+  font-family: var(--sans);
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  margin-left: 8px;
+  vertical-align: middle;
+}

@@ -189,14 +189,14 @@ function desdeHoja(filas) {
 
 // ---------- Cálculos ----------
 
-// El porcentaje de cada actividad es sobre la nota final del módulo, como lo
-// publican los profesores (por ejemplo, 3 prácticas de 10 %, 10 % y 20 % que
-// forman el 40 % de prácticas).
+// El porcentaje de cada actividad es dentro de su grupo: dentro de los
+// exámenes o de las prácticas si el módulo tiene reparto, o dentro de todo el
+// módulo si no lo tiene. En cada grupo los porcentajes suman 100 %.
 // - Si en el grupo hay actividades con porcentaje, las que no lo tienen quedan
 //   pendientes y no cuentan en la media.
 // - Si ninguna tiene porcentaje, todas cuentan lo mismo.
-// Devuelve un aviso si los porcentajes suman más de lo que vale el grupo.
-function asignarPesos(actividades, nombreGrupo, total) {
+// Devuelve un aviso si los porcentajes del grupo pasan del 100 %.
+function asignarPesos(actividades, nombreGrupo) {
   const hayPorcentajes = actividades.some(a => a.porcentaje !== null);
 
   for (const a of actividades) {
@@ -205,11 +205,19 @@ function asignarPesos(actividades, nombreGrupo, total) {
   }
 
   const asignado = actividades.reduce((suma, a) => suma + (a.porcentaje ?? 0), 0);
-  if (asignado > total) {
-    const texto = n => formatoPorcentaje.format(n) + ' %';
-    return `Los porcentajes de ${nombreGrupo} suman ${texto(asignado)}, más del ${texto(total)} que valen en total.`;
+  if (asignado > 100) {
+    return `Los porcentajes de ${nombreGrupo} suman ${formatoPorcentaje.format(asignado)} %, más del 100 %.`;
   }
   return null;
+}
+
+// Qué parte del grupo ya está evaluada: la suma de los porcentajes de las
+// actividades que tienen nota. Si el grupo no usa porcentajes, no se sabe (null).
+function porcentajeEvaluado(actividades) {
+  if (!actividades.some(a => a.porcentaje !== null)) return null;
+  return actividades
+    .filter(a => a.nota !== null && a.porcentaje !== null)
+    .reduce((suma, a) => suma + a.porcentaje, 0);
 }
 
 // Media ponderada (nota × peso / suma de pesos) de las actividades con nota.
@@ -231,12 +239,15 @@ function calcularModulo(modulo) {
   const practicas = modulo.actividades.filter(a => a.tipo !== 'Examen');
 
   // Con reparto, los exámenes y las prácticas van por separado;
-  // sin reparto, todas las actividades forman un solo grupo del 100 %
+  // sin reparto, todas las actividades forman un solo grupo
   const avisos = modulo.reparto
-    ? [asignarPesos(examenes, 'los exámenes', modulo.reparto.examenes),
-       asignarPesos(practicas, 'las prácticas', modulo.reparto.practicas)]
-    : [asignarPesos(modulo.actividades, 'este módulo', 100)];
+    ? [asignarPesos(examenes, 'los exámenes'), asignarPesos(practicas, 'las prácticas')]
+    : [asignarPesos(modulo.actividades, 'este módulo')];
   modulo.avisos = avisos.filter(aviso => aviso !== null);
+
+  modulo.evaluadoExamenes = porcentajeEvaluado(examenes);
+  modulo.evaluadoPracticas = porcentajeEvaluado(practicas);
+  modulo.evaluadoModulo = modulo.reparto ? null : porcentajeEvaluado(modulo.actividades);
 
   modulo.mediaExamenes = mediaPonderada(examenes);
   modulo.mediaPracticas = mediaPonderada(practicas);
@@ -255,6 +266,14 @@ function calcularModulo(modulo) {
       pesos += modulo.reparto.practicas;
     }
     modulo.media = pesos > 0 ? suma / pesos : null;
+
+    // Si solo hay nota en uno de los dos grupos, la media es provisional:
+    // se calcula con ese grupo, en proporción, hasta que llegue el otro
+    if (modulo.mediaExamenes === null && modulo.mediaPracticas !== null) {
+      modulo.provisional = 'Provisional: de momento solo cuentan las prácticas, porque aún no hay exámenes con nota.';
+    } else if (modulo.mediaPracticas === null && modulo.mediaExamenes !== null) {
+      modulo.provisional = 'Provisional: de momento solo cuentan los exámenes, porque aún no hay prácticas con nota.';
+    }
   } else {
     modulo.media = mediaPonderada(modulo.actividades);
   }
@@ -297,6 +316,12 @@ function nivel(nota) {
 
 function formatear(nota) {
   return nota === null ? '—' : formato.format(nota);
+}
+
+// «sobre el 50 %» debajo de una media que aún no tiene todas sus notas
+function textoEvaluado(evaluado) {
+  if (evaluado === null || evaluado === 0 || evaluado >= 100) return '';
+  return `<span class="sobre">sobre el ${formatoPorcentaje.format(evaluado)} % evaluado</span>`;
 }
 
 function textoReparto(reparto) {
@@ -350,7 +375,8 @@ function pintarTarjetas() {
 
     const media = m.media === null
       ? '<div class="media-grande sin-nota color-sin">Sin nota</div>'
-      : `<div class="media-grande num color-${nivel(m.media)}">${formatear(m.media)}</div>`;
+      : `<div class="media-grande num color-${nivel(m.media)}">${formatear(m.media)}` +
+        `${m.provisional ? '<span class="provisional">provisional</span>' : ''}</div>`;
 
     boton.innerHTML = `
       <div class="tarjeta-arriba">
@@ -423,21 +449,22 @@ function pintarDetalle() {
     <dl class="datos">
       <div class="dato">
         <dt>Media del módulo</dt>
-        <dd class="num color-${nivel(m.media)}">${formatear(m.media)}</dd>
+        <dd class="num color-${nivel(m.media)}">${formatear(m.media)}${textoEvaluado(m.evaluadoModulo)}</dd>
       </div>
       <div class="dato">
         <dt>Media de exámenes</dt>
-        <dd class="num">${formatear(m.mediaExamenes)}</dd>
+        <dd class="num">${formatear(m.mediaExamenes)}${textoEvaluado(m.evaluadoExamenes)}</dd>
       </div>
       <div class="dato">
         <dt>Media de prácticas</dt>
-        <dd class="num">${formatear(m.mediaPracticas)}</dd>
+        <dd class="num">${formatear(m.mediaPracticas)}${textoEvaluado(m.evaluadoPracticas)}</dd>
       </div>
       <div class="dato">
         <dt>Reparto oficial</dt>
         <dd class="texto">${escapar(textoReparto(m.reparto))}</dd>
       </div>
     </dl>
+    ${m.provisional ? `<p class="aviso aviso-modulo">${escapar(m.provisional)}</p>` : ''}
     ${m.avisos.map(aviso => `<p class="aviso aviso-modulo">${escapar(aviso)}</p>`).join('')}
     <table class="tabla">
       <thead>
@@ -516,19 +543,23 @@ function abrirNota(idNota, idModulo) {
 function explicarPorcentaje() {
   const modulo = datos.modulos.find(m => m.id === formNota.modulo.value);
   const esExamen = formNota.tipo.value === 'Examen';
-  const grupo = esExamen ? 'los exámenes' : 'las prácticas';
-  const etiqueta = esExamen ? '% en exámenes' : '% en prácticas';
+  let etiqueta, grupo, todas;
 
-  let total = '';
-  if (modulo && modulo.reparto) {
-    const valen = esExamen ? modulo.reparto.examenes : modulo.reparto.practicas;
-    total = ` (en total, ${grupo} valen un ${valen} % de la nota)`;
+  if (!modulo || modulo.reparto) {
+    etiqueta = esExamen ? '% en exámenes' : '% en prácticas';
+    grupo = esExamen ? 'los exámenes' : 'las prácticas';
+    todas = esExamen ? 'todos los exámenes juntos' : 'todas las prácticas juntas';
+  } else {
+    // Sin reparto, exámenes y prácticas forman un solo grupo
+    etiqueta = '% del módulo';
+    grupo = 'el módulo';
+    todas = 'todas las actividades del módulo juntas';
   }
 
   document.getElementById('etiqueta-porcentaje').textContent = etiqueta;
   document.getElementById('nombre-ayuda-porcentaje').textContent = etiqueta + ':';
   document.getElementById('ayuda-porcentaje').textContent =
-    ` cuánto vale esta actividad dentro de ${grupo}${total}. ` +
+    ` cuánto vale esta actividad dentro de ${grupo} (${todas} suman 100 %). ` +
     'Si no lo sabes, déjalo vacío: quedará pendiente y no contará en la media.';
 }
 
