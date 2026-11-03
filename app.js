@@ -326,7 +326,8 @@ function textoEvaluado(evaluado) {
 
 function textoReparto(reparto) {
   if (!reparto) return 'No publicado: media simple';
-  let texto = `${reparto.examenes} % exámenes / ${reparto.practicas} % prácticas`;
+  // Espacios que no se parten ( ): si no cabe, salta de línea solo en el guion
+  let texto = `${reparto.examenes} % exámenes – ${reparto.practicas} % prácticas`;
   const resto = 100 - reparto.examenes - reparto.practicas;
   if (resto > 0) texto += ` (el ${resto} % restante aún no cuenta)`;
   return texto;
@@ -375,8 +376,7 @@ function pintarTarjetas() {
 
     const media = m.media === null
       ? '<div class="media-grande sin-nota color-sin">Sin nota</div>'
-      : `<div class="media-grande num color-${nivel(m.media)}">${formatear(m.media)}` +
-        `${m.provisional ? '<span class="provisional">provisional</span>' : ''}</div>`;
+      : `<div class="media-grande num color-${nivel(m.media)}">${formatear(m.media)}</div>`;
 
     boton.innerHTML = `
       <div class="tarjeta-arriba">
