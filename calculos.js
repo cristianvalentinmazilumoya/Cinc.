@@ -194,10 +194,10 @@ function calcularModulo(modulo) {
   if (modulo.media !== null) {
     if (reparto.examenes > 0 && modulo.mediaExamenes === null) {
       modulo.provisional = 'Provisional: de momento solo cuentan las actividades, porque ' +
-        (examenes.some(a => a.nota !== null) ? 'a los exámenes con nota les falta el porcentaje.' : 'aún no hay exámenes con nota.');
+        (examenes.some(a => a.nota !== null && a.porcentaje !== 0) ? 'a los exámenes con nota les falta el porcentaje.' : 'aún no hay exámenes con nota que cuenten.');
     } else if (reparto.practicas > 0 && modulo.mediaPracticas === null) {
       modulo.provisional = 'Provisional: de momento solo cuentan los exámenes, porque ' +
-        (practicas.some(a => a.nota !== null) ? 'a las actividades con nota les falta el porcentaje.' : 'aún no hay actividades con nota.');
+        (practicas.some(a => a.nota !== null && a.porcentaje !== 0) ? 'a las actividades con nota les falta el porcentaje.' : 'aún no hay actividades con nota que cuenten.');
     }
   }
 }

@@ -92,6 +92,8 @@ caso('Provisional', 'sin exámenes con nota: cuenta solo actividades',
   redondear(modulo(R6040, [examen(null), actividad(8), actividad(6)]).media), 7);
 caso('Provisional', '… y se marca como provisional',
   Boolean(modulo(R6040, [examen(null), actividad(8)]).provisional), true);
+caso('Provisional', 'el único examen con nota vale 0 %: el motivo no es que falte el porcentaje',
+  modulo(R6040, [examen(9, 0), examen(null), actividad(8)]).provisional.includes('aún no hay exámenes con nota'), true);
 caso('Mínimos', 'media de exámenes por debajo del mínimo',
   modulo(R6040, [examen(4), actividad(9)], { examenes: 5, practicas: null }).bajoMinimo.length, 1);
 caso('Mínimos', 'media de exámenes justo en el mínimo: aprueba',
