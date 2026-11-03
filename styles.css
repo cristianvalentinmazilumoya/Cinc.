@@ -620,3 +620,21 @@ h1 .punto { color: var(--punto); }
 .marca-practicas { background: var(--punto); }
 
 .reparto-resto { color: var(--texto-suave); }
+
+/* Subtítulo encima de los porcentajes del módulo */
+.subtitulo-campos {
+  font-size: .9rem;
+  font-weight: 600;
+  margin: 8px 0 8px;
+}
+
+/* Aviso con un botón al lado (por ejemplo «Indicar porcentajes») */
+.aviso-con-boton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.aviso-con-boton p { margin: 0; flex: 1; min-width: 220px; }

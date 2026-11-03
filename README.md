@@ -17,7 +17,7 @@ Web: https://cristianvalentinmazilumoya.github.io/Cinc./
 ## Cómo se usa
 
 1. **Primer uso:** «Usar la plantilla de 1.º DAW» crea los módulos de DAW de golpe. También se pueden crear a mano («Crear un módulo») o cargar una copia de seguridad.
-2. **Módulos:** la tarjeta «+ Módulo» crea uno nuevo; «Editar módulo» (en el detalle) cambia el nombre, la sigla o el reparto, o lo borra junto con sus notas.
+2. **Módulos:** la tarjeta «+ Módulo» crea uno nuevo, con su nombre, sigla y cuánto valen los exámenes y las actividades; «Editar módulo» (en el detalle) cambia esos datos o lo borra junto con sus notas.
 3. **Notas:** «+ Añadir nota» arriba, o «+ Añadir nota de …» en el detalle de un módulo. Toca una fila de la tabla para editarla o borrarla. Si aún no hay nota, se deja vacía y sale como pendiente.
 4. **Copia de seguridad:** botón «Copia». «Descargar copia» guarda un archivo `cinc-copia-AAAA-MM-DD.json`; «Cargar una copia» lo recupera en este u otro dispositivo (sustituye lo que haya).
 
@@ -29,19 +29,19 @@ La primera vez que se abre esta versión, si el navegador aún tenía las notas 
 
 ## Cómo se calculan las medias
 
-- **Porcentaje de cada nota:** cada nota tiene un porcentaje dentro de su grupo: dentro de los exámenes o de las actividades si el módulo tiene reparto, o dentro de todo el módulo si no lo tiene. En cada grupo los porcentajes suman 100 % (por ejemplo, tres actividades de 20 %, 30 % y 50 %). **Una nota sin porcentaje (vacío o 0) no cuenta en la media**: la app no inventa lo que vale.
-- **Media de exámenes / actividades:** media ponderada (nota × porcentaje / suma de porcentajes) de las notas puestas que tienen porcentaje, en proporción. Si de 20 %, 30 % y 50 % solo hay nota de las dos primeras, la media se calcula con esas dos como si fueran el 100 % y la app indica «sobre el 50 % evaluado». Cuando llega la tercera, la media pasa a ser sobre el 100 %.
-- **Media del módulo:** si el módulo tiene reparto oficial (por ejemplo DIW 60/40), se combinan las dos medias con esos porcentajes. Si solo uno de los dos grupos tiene media, la del módulo es la de ese grupo y se marca como provisional, con el motivo (aún no hay notas del otro grupo, o les falta el porcentaje). Un grupo que vale 0 % en el reparto nunca cuenta. Sin reparto, es la media ponderada de todas sus notas.
-- **Media pendiente:** si un módulo tiene notas puestas pero ninguna con porcentaje, la media queda pendiente y se explica que se calculará cuando se indique el porcentaje de cada nota.
-- **Parte evaluada de la nota final:** debajo de la media del módulo se indica qué parte de la nota final ya está evaluada (por ejemplo, en un 60/40 con la mitad de cada grupo hecha, «sobre el 50 % evaluado»).
+- **Reparto del módulo (imprescindible):** cuánto valen los exámenes y cuánto las actividades en la nota del módulo (por ejemplo, 60 % y 40 %). Se indica al crear o editar el módulo. **Sin reparto, la media del módulo queda pendiente**, con un aviso y un botón para indicarlo. Si los dos suman menos de 100 (por ejemplo DIG, 35 % y 45 %), el resto aún no cuenta.
+- **Porcentaje de cada nota (opcional):** cuánto vale dentro de los exámenes o dentro de las actividades; los de un grupo suman 100 % (por ejemplo, tres actividades de 20 %, 30 % y 50 %). Si ninguna nota del grupo lo tiene, todas cuentan lo mismo. Si solo algunas lo tienen, las que no lo tienen no cuentan (la app no inventa lo que valen) y se avisa.
+- **Media de exámenes / actividades:** media ponderada de las notas puestas, en proporción. Si de 20 %, 30 % y 50 % solo hay nota de las dos primeras, la media se calcula con esas dos como si fueran el 100 % y la app indica «sobre el 50 % evaluado».
+- **Media del módulo:** se combinan las dos medias con el reparto del módulo. Si solo uno de los dos grupos tiene media, la del módulo es la de ese grupo y se marca como provisional, con el motivo. Un grupo que vale 0 % nunca cuenta.
+- **Parte evaluada de la nota final:** si se puede saber (los grupos con notas usan porcentajes), debajo de la media del módulo se indica qué parte de la nota final ya está evaluada.
 - **Media del curso:** media simple de las medias de los módulos que tienen media.
 
 ### Avisos
 
-- Pendiente: hay notas puestas, pero ninguna tiene porcentaje.
-- Hay notas puestas que aún no cuentan porque les falta el porcentaje.
+- Pendiente: el módulo tiene notas pero no tiene reparto.
+- Hay notas puestas que no cuentan porque, en su grupo, otras sí tienen porcentaje y ellas no.
 - Los porcentajes de un grupo suman más del 100 %.
-- Todos los porcentajes de un grupo suman justo lo que vale el grupo en la nota final (por ejemplo 10 + 10 + 20 = 40 % en las actividades de un 60/40): seguramente se han puesto sobre la nota final y no dentro del grupo. La media sale igual, pero la parte evaluada no llegaría nunca al 100 %.
+- Todos los porcentajes de un grupo suman justo lo que vale el grupo en la nota final (por ejemplo 10 + 10 + 20 = 40 % en las actividades de un 60/40): seguramente se han puesto sobre la nota final y no dentro del grupo.
 - Un grupo vale 0 % en el reparto pero tiene notas.
 
 Las notas y los porcentajes aceptan coma o punto decimal (`8,5` o `8.5`).
@@ -60,7 +60,7 @@ Y abre http://localhost:8000. Para pararlo: `Ctrl + C`.
 
 La web se publica con GitHub Pages desde la rama `main`. Al hacer push a `main`, en un minuto está en línea.
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v18` → `cinc-v19`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v19` → `cinc-v20`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
 
 ## Instalarla
 

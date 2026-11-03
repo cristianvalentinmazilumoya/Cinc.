@@ -31,7 +31,7 @@ const formatoPorcentaje = new Intl.NumberFormat('es-ES', { maximumFractionDigits
 
 // datos = { modulos: [{ id, nombre, sigla, reparto }],
 //           notas: [{ id, moduloId, actividad, tipo, nota, porcentaje, comentario }],
-//           porcentaje: lo que vale la nota dentro de su grupo (null = sin indicar, no cuenta)
+//           porcentaje: lo que vale la nota dentro de exámenes o actividades (null = sin indicar)
 //           ultimaCopia: fecha ISO o null }
 let datos = { modulos: [], notas: [], ultimaCopia: null };
 let modulos = [];            // módulos con sus actividades y medias (se calcula)
@@ -194,16 +194,21 @@ function desdeHoja(filas) {
 
 // ---------- Cálculos ----------
 
-// El porcentaje de cada nota es dentro de su grupo: dentro de los exámenes o
-// de las actividades si el módulo tiene reparto, o dentro de todo el módulo si
-// no lo tiene. En cada grupo los porcentajes suman 100 %.
-// Una nota sin porcentaje no cuenta en la media: no se inventa lo que vale.
+// Lo imprescindible para la media del módulo es su reparto: cuánto valen los
+// exámenes y cuánto las actividades. Sin reparto, la media queda pendiente.
+//
+// Dentro de cada grupo (exámenes o actividades), el porcentaje de cada nota es
+// opcional y los de un grupo suman 100 %:
+// - Si ninguna nota del grupo tiene porcentaje, todas cuentan lo mismo.
+// - Si algunas lo tienen, las que no lo tienen no cuentan (no se inventa lo que valen).
 // Devuelve un aviso si los porcentajes no cuadran. «valeEnLaNota» es lo que
-// vale el grupo en el reparto oficial (null si el módulo no tiene reparto).
+// vale el grupo en el reparto del módulo (null si no tiene reparto).
 function asignarPesos(notas, nombreGrupo, valeEnLaNota) {
+  const hayPorcentajes = notas.some(a => a.porcentaje !== null);
+
   for (const a of notas) {
-    a.faltaPorcentaje = a.porcentaje === null;
-    a.peso = a.porcentaje ?? 0;
+    a.faltaPorcentaje = hayPorcentajes && a.porcentaje === null;
+    a.peso = hayPorcentajes ? (a.porcentaje ?? 0) : 1;
   }
 
   const asignado = notas.reduce((suma, a) => suma + (a.porcentaje ?? 0), 0);
@@ -224,25 +229,22 @@ function asignarPesos(notas, nombreGrupo, valeEnLaNota) {
 }
 
 // Qué parte del grupo ya está evaluada: la suma de los porcentajes de las
-// notas puestas (como mucho 100).
+// notas puestas (como mucho 100). Si no hay notas, es 0. Si hay notas pero el
+// grupo no usa porcentajes, no se puede saber (null).
 function porcentajeEvaluado(notas) {
-  const suma = notas
-    .filter(a => a.nota !== null)
-    .reduce((total, a) => total + (a.porcentaje ?? 0), 0);
+  const conNota = notas.filter(a => a.nota !== null);
+  if (conNota.length === 0) return 0;
+  if (!notas.some(a => a.porcentaje !== null)) return null;
+  const suma = conNota.reduce((total, a) => total + (a.porcentaje ?? 0), 0);
   return Math.min(suma, 100);
 }
 
-// ¿Hay alguna nota puesta a la que le falte el porcentaje?
-function faltanPorcentajes(notas) {
-  return notas.some(a => a.nota !== null && a.porcentaje === null);
-}
-
-// Media ponderada (nota × peso / suma de pesos) de las actividades con nota.
-function mediaPonderada(actividades) {
+// Media ponderada (nota × peso / suma de pesos) de las notas puestas.
+function mediaPonderada(notas) {
   let suma = 0;
   let pesos = 0;
 
-  for (const a of actividades) {
+  for (const a of notas) {
     if (a.nota === null) continue;
     suma += a.nota * a.peso;
     pesos += a.peso;
@@ -254,16 +256,13 @@ function mediaPonderada(actividades) {
 function calcularModulo(modulo) {
   const examenes = modulo.actividades.filter(a => a.tipo === 'Examen');
   const practicas = modulo.actividades.filter(a => a.tipo !== 'Examen');
-
-  // Con reparto, los exámenes y las actividades van por separado;
-  // sin reparto, todas las actividades forman un solo grupo
   const reparto = modulo.reparto;
-  const avisos = reparto
-    ? [asignarPesos(examenes, 'los exámenes', reparto.examenes),
-       asignarPesos(practicas, 'las actividades', reparto.practicas)]
-    : [asignarPesos(modulo.actividades, 'este módulo', null)];
 
-  // Un grupo que vale 0 % en el reparto nunca cuenta: se avisa si tiene actividades
+  const avisos = [
+    asignarPesos(examenes, 'los exámenes', reparto ? reparto.examenes : null),
+    asignarPesos(practicas, 'las actividades', reparto ? reparto.practicas : null)
+  ];
+  // Un grupo que vale 0 % en el reparto nunca cuenta: se avisa si tiene notas
   if (reparto && reparto.examenes === 0 && examenes.length > 0) {
     avisos.push('Los exámenes valen 0 % en el reparto de este módulo, así que no cuentan en la media.');
   }
@@ -272,54 +271,55 @@ function calcularModulo(modulo) {
   }
   modulo.avisos = avisos.filter(aviso => aviso !== null);
 
-  modulo.evaluadoExamenes = porcentajeEvaluado(examenes);
-  modulo.evaluadoPracticas = porcentajeEvaluado(practicas);
-
-  // Parte de la nota final que ya está evaluada
-  if (reparto) {
-    modulo.evaluadoModulo =
-      (reparto.examenes * modulo.evaluadoExamenes + reparto.practicas * modulo.evaluadoPracticas) / 100;
-  } else {
-    modulo.evaluadoModulo = porcentajeEvaluado(modulo.actividades);
-  }
-
   modulo.mediaExamenes = mediaPonderada(examenes);
   modulo.mediaPracticas = mediaPonderada(practicas);
+  modulo.evaluadoExamenes = porcentajeEvaluado(examenes);
+  modulo.evaluadoPracticas = porcentajeEvaluado(practicas);
   modulo.numNotas = modulo.actividades.filter(a => a.nota !== null).length;
+  // Notas puestas que no cuentan porque en su grupo otras sí tienen porcentaje
+  modulo.sinPorcentaje = modulo.actividades.filter(a => a.nota !== null && a.faltaPorcentaje).length;
 
-  if (modulo.reparto) {
-    // Solo cuentan los grupos que ya tienen nota
-    let suma = 0;
-    let pesos = 0;
-    if (modulo.mediaExamenes !== null) {
-      suma += modulo.mediaExamenes * modulo.reparto.examenes;
-      pesos += modulo.reparto.examenes;
-    }
-    if (modulo.mediaPracticas !== null) {
-      suma += modulo.mediaPracticas * modulo.reparto.practicas;
-      pesos += modulo.reparto.practicas;
-    }
-    modulo.media = pesos > 0 ? suma / pesos : null;
+  modulo.media = null;
+  modulo.evaluadoModulo = null;
+  modulo.pendiente = false;
 
-    // Si hay media pero a uno de los dos grupos (que sí cuenta) aún le falta,
-    // la media es provisional: se calcula con el otro, en proporción
-    if (modulo.media !== null) {
-      if (reparto.examenes > 0 && modulo.mediaExamenes === null) {
-        modulo.provisional = 'Provisional: de momento solo cuentan las actividades, porque ' +
-          (faltanPorcentajes(examenes) ? 'falta el porcentaje de los exámenes con nota.' : 'aún no hay exámenes con nota.');
-      } else if (reparto.practicas > 0 && modulo.mediaPracticas === null) {
-        modulo.provisional = 'Provisional: de momento solo cuentan los exámenes, porque ' +
-          (faltanPorcentajes(practicas) ? 'falta el porcentaje de las actividades con nota.' : 'aún no hay actividades con nota.');
-      }
-    }
-  } else {
-    modulo.media = mediaPonderada(modulo.actividades);
+  if (!reparto) {
+    // Sin reparto no se sabe cuánto vale cada grupo: la media queda pendiente
+    modulo.pendiente = modulo.numNotas > 0;
+    return;
   }
 
-  // Hay notas, pero ninguna tiene porcentaje: la media queda pendiente
-  modulo.pendiente = modulo.media === null && faltanPorcentajes(modulo.actividades);
-  // Notas puestas que todavía no cuentan porque les falta el porcentaje
-  modulo.sinPorcentaje = modulo.actividades.filter(a => a.nota !== null && a.porcentaje === null).length;
+  // Se combinan los grupos que ya tienen media, en proporción a su reparto
+  let suma = 0;
+  let pesos = 0;
+  if (modulo.mediaExamenes !== null) {
+    suma += modulo.mediaExamenes * reparto.examenes;
+    pesos += reparto.examenes;
+  }
+  if (modulo.mediaPracticas !== null) {
+    suma += modulo.mediaPracticas * reparto.practicas;
+    pesos += reparto.practicas;
+  }
+  modulo.media = pesos > 0 ? suma / pesos : null;
+
+  // Parte de la nota final ya evaluada (solo si se puede saber en los dos grupos)
+  const ex = reparto.examenes > 0 ? modulo.evaluadoExamenes : 0;
+  const pr = reparto.practicas > 0 ? modulo.evaluadoPracticas : 0;
+  if (ex !== null && pr !== null) {
+    modulo.evaluadoModulo = (reparto.examenes * ex + reparto.practicas * pr) / 100;
+  }
+
+  // Si hay media pero a uno de los dos grupos (que sí cuenta) le falta,
+  // la media es provisional: se calcula con el otro, en proporción
+  if (modulo.media !== null) {
+    if (reparto.examenes > 0 && modulo.mediaExamenes === null) {
+      modulo.provisional = 'Provisional: de momento solo cuentan las actividades, porque ' +
+        (examenes.some(a => a.nota !== null) ? 'a los exámenes con nota les falta el porcentaje.' : 'aún no hay exámenes con nota.');
+    } else if (reparto.practicas > 0 && modulo.mediaPracticas === null) {
+      modulo.provisional = 'Provisional: de momento solo cuentan los exámenes, porque ' +
+        (practicas.some(a => a.nota !== null) ? 'a las actividades con nota les falta el porcentaje.' : 'aún no hay actividades con nota.');
+    }
+  }
 }
 
 // Junta cada módulo con sus notas y calcula las medias
@@ -370,7 +370,7 @@ function textoEvaluado(evaluado) {
 // Reparto oficial: una barra partida en exámenes y actividades, con su leyenda
 function htmlReparto(reparto) {
   if (!reparto) {
-    return '<dd class="texto">Sin reparto: todas las notas cuentan en una sola media</dd>';
+    return '<dd class="texto color-sin">Sin indicar</dd>';
   }
   const { examenes, practicas } = reparto;
   const resto = 100 - examenes - practicas;
@@ -411,7 +411,7 @@ function pintarResumen() {
   } else if (conNota === 0) {
     resumen.innerHTML =
       `Tienes <strong class="num">${notas}</strong> ${notas === 1 ? 'nota puesta' : 'notas puestas'}, ` +
-      'pero las medias se calcularán cuando indiques el porcentaje de cada nota.';
+      'pero aún no se puede calcular ninguna media. Toca un módulo para ver qué falta.';
   } else {
     resumen.innerHTML =
       `Media del curso <strong class="num">${formatear(media)}</strong> con ` +
@@ -519,12 +519,15 @@ function pintarDetalle() {
         <dd class="num">${formatear(m.mediaPracticas)}${textoEvaluado(m.evaluadoPracticas)}</dd>
       </div>
       <div class="dato dato-reparto">
-        <dt>Reparto oficial</dt>
+        <dt>Reparto del módulo</dt>
         ${htmlReparto(m.reparto)}
       </div>
     </dl>
-    ${m.pendiente ? '<p class="aviso aviso-modulo"><strong>Pendiente:</strong> la nota media se calculará cuando se indique el porcentaje de cada nota.</p>' : ''}
-    ${!m.pendiente && m.sinPorcentaje > 0
+    ${m.pendiente ? `<div class="aviso aviso-modulo aviso-con-boton">
+        <p><strong>Pendiente:</strong> la nota media se calculará cuando se indique cuánto valen los exámenes y cuánto las actividades en este módulo.</p>
+        <button type="button" class="boton" data-accion="editar-modulo">Indicar porcentajes</button>
+      </div>` : ''}
+    ${m.sinPorcentaje > 0
       ? `<p class="aviso aviso-modulo">${m.sinPorcentaje === 1 ? 'Una nota puesta aún no cuenta en la media porque le falta' : `${m.sinPorcentaje} notas puestas aún no cuentan en la media porque les falta`} el porcentaje.</p>`
       : ''}
     ${m.provisional ? `<p class="aviso aviso-modulo">${escapar(m.provisional)}</p>` : ''}
@@ -601,29 +604,22 @@ function abrirNota(idNota, idModulo) {
   formNota.actividad.focus();
 }
 
-// El campo del porcentaje se llama «% en exámenes» o «% en actividades» según el
-// tipo elegido, y su ayuda dice cuánto valen en total
+// El campo del porcentaje se llama «% en exámenes» o «% en actividades» según
+// el tipo elegido
 function explicarPorcentaje() {
-  const modulo = datos.modulos.find(m => m.id === formNota.modulo.value);
   const esExamen = formNota.tipo.value === 'Examen';
-  let etiqueta, grupo, todas;
-
-  if (!modulo || modulo.reparto) {
-    etiqueta = esExamen ? '% en exámenes' : '% en actividades';
-    grupo = esExamen ? 'los exámenes' : 'las actividades';
-    todas = esExamen ? 'todos los exámenes juntos' : 'todas las actividades juntas';
-  } else {
-    // Sin reparto, exámenes y actividades forman un solo grupo
-    etiqueta = '% del módulo';
-    grupo = 'el módulo';
-    todas = 'todas las actividades del módulo juntas';
-  }
+  const etiqueta = esExamen ? '% en exámenes' : '% en actividades';
+  const grupo = esExamen ? 'los exámenes' : 'las actividades';
+  const todas = esExamen ? 'todos los exámenes juntos' : 'todas las actividades juntas';
+  const ninguna = esExamen ? 'ningún examen' : 'ninguna actividad';
+  const [las, todos, algunos] = esExamen ? ['los', 'todos', 'algunos'] : ['las', 'todas', 'algunas'];
 
   document.getElementById('etiqueta-porcentaje').textContent = etiqueta;
-  document.getElementById('nombre-ayuda-porcentaje').textContent = etiqueta + ':';
+  document.getElementById('nombre-ayuda-porcentaje').textContent = etiqueta + ' (opcional):';
   document.getElementById('ayuda-porcentaje').textContent =
     ` cuánto vale esta nota dentro de ${grupo} (${todas} suman 100 %). ` +
-    'Si no lo sabes, déjalo vacío: quedará pendiente y no contará en la media.';
+    `Si no lo pones en ${ninguna}, ${todos} cuentan lo mismo; si lo pones solo en ${algunos}, ` +
+    `${las} que no lo tengan no cuentan.`;
 }
 
 formNota.modulo.addEventListener('change', explicarPorcentaje);
@@ -690,10 +686,6 @@ document.getElementById('borrar-nota').addEventListener('click', () => {
 const dialogoModulo = document.getElementById('dialogo-modulo');
 const formModulo = document.getElementById('form-modulo');
 
-function mostrarCamposReparto() {
-  document.getElementById('campos-reparto').hidden = !formModulo.tieneReparto.checked;
-}
-
 function abrirModulo(idModulo) {
   idEditando = idModulo;
   const modulo = datos.modulos.find(m => m.id === idModulo);
@@ -701,18 +693,14 @@ function abrirModulo(idModulo) {
   document.getElementById('titulo-modulo').textContent = modulo ? 'Editar módulo' : 'Nuevo módulo';
   formModulo.nombre.value = modulo ? modulo.nombre : '';
   formModulo.sigla.value = modulo ? modulo.sigla : '';
-  formModulo.tieneReparto.checked = Boolean(modulo && modulo.reparto);
-  formModulo.examenes.value = modulo && modulo.reparto ? modulo.reparto.examenes : 50;
-  formModulo.practicas.value = modulo && modulo.reparto ? modulo.reparto.practicas : 50;
-  mostrarCamposReparto();
+  formModulo.examenes.value = modulo && modulo.reparto ? String(modulo.reparto.examenes).replace('.', ',') : '';
+  formModulo.practicas.value = modulo && modulo.reparto ? String(modulo.reparto.practicas).replace('.', ',') : '';
   document.getElementById('borrar-modulo').hidden = !modulo;
   document.getElementById('error-modulo').textContent = '';
 
   dialogoModulo.showModal();
   formModulo.nombre.focus();
 }
-
-formModulo.tieneReparto.addEventListener('change', mostrarCamposReparto);
 
 // La sigla siempre en mayúsculas
 formModulo.sigla.addEventListener('input', () => {
@@ -735,12 +723,18 @@ formModulo.addEventListener('submit', evento => {
     error.textContent = `Ya tienes un módulo con la sigla ${sigla}.`;
     return;
   }
-  if (formModulo.tieneReparto.checked) {
-    const examenes = aNumero(formModulo.examenes.value);
-    const practicas = aNumero(formModulo.practicas.value);
-    if (examenes === null || practicas === null || examenes < 0 || practicas < 0 ||
-        examenes + practicas > 100 || examenes + practicas === 0) {
-      error.textContent = 'Los porcentajes tienen que sumar entre 1 y 100.';
+  // Los dos porcentajes, o ninguno (entonces la media del módulo queda pendiente)
+  const textoExamenes = formModulo.examenes.value.trim().replace('%', '');
+  const textoPracticas = formModulo.practicas.value.trim().replace('%', '');
+  if (textoExamenes !== '' || textoPracticas !== '') {
+    const examenes = aNumero(textoExamenes);
+    const practicas = aNumero(textoPracticas);
+    if (examenes === null || practicas === null) {
+      error.textContent = 'Rellena los dos porcentajes (exámenes y actividades) o deja los dos vacíos.';
+      return;
+    }
+    if (examenes < 0 || practicas < 0 || examenes + practicas > 100 || examenes + practicas === 0) {
+      error.textContent = 'Los porcentajes de exámenes y actividades tienen que sumar entre 1 y 100.';
       return;
     }
     reparto = { examenes: examenes, practicas: practicas };

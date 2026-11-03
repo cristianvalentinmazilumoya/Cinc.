@@ -123,22 +123,18 @@
         <input name="sigla" type="text" autocomplete="off" maxlength="6" placeholder="BBDD">
       </label>
 
-      <label class="casilla">
-        <input name="tieneReparto" type="checkbox">
-        <span>Los exámenes y las actividades tienen un peso fijo (reparto oficial)</span>
-      </label>
-
-      <div id="campos-reparto" class="campos-fila" hidden>
+      <p class="subtitulo-campos">Cuánto valen en la nota del módulo</p>
+      <div class="campos-fila">
         <label class="campo">
           <span>% exámenes</span>
-          <input name="examenes" type="text" inputmode="decimal" autocomplete="off">
+          <input name="examenes" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej.: 60">
         </label>
         <label class="campo">
           <span>% actividades</span>
-          <input name="practicas" type="text" inputmode="decimal" autocomplete="off">
+          <input name="practicas" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej.: 40">
         </label>
       </div>
-      <p class="ayuda">Márcalo si el profesor ha dicho cuánto valen los exámenes y cuánto las actividades (por ejemplo, 60 % y 40 %). Así la media del módulo respeta ese reparto aunque haya más actividades que exámenes. Si no lo marcas, todas las actividades del módulo se juntan en una sola media.</p>
+      <p class="ayuda">Lo publica el profesor (por ejemplo, 60 % exámenes y 40 % actividades). Hace falta para calcular la media del módulo: si aún no lo sabes, déjalo vacío y la media quedará pendiente.</p>
 
       <p id="error-modulo" class="error" role="alert"></p>
 
