@@ -1129,29 +1129,50 @@ function exportar() {
 
 async function importar(archivo) {
   const error = document.getElementById('error-copia');
-  let nuevos;
+  // Los errores se muestran en el diálogo de copia (aunque se importe desde la bienvenida)
+  const fallo = texto => {
+    if (!dialogoCopia.open) abrirCopia();
+    error.textContent = texto;
+  };
 
+  let contenido;
   try {
-    const contenido = JSON.parse(await archivo.text());
-    // Módulos compartidos (sin notas): se añaden a los que ya hay
-    if (contenido.tipo === 'modulos' && Array.isArray(contenido.modulos) &&
-        contenido.modulos.every(m => m && m.nombre && m.sigla)) {
-      cargarModulos(contenido.modulos);
-      return;
-    }
-    if (esCopiaValida(contenido)) {
-      nuevos = completarNotas({
-        cursos: contenido.cursos, cursoActual: contenido.cursoActual,
-        modulos: contenido.modulos, notas: contenido.notas, ultimaCopia: contenido.exportado || null
-      });
-    } else if (Array.isArray(contenido.filas)) {
-      nuevos = completarNotas(desdeHoja(contenido.filas));   // copia de la antigua hoja de Google
-    } else {
-      throw new Error('Formato desconocido');
-    }
+    contenido = JSON.parse(await archivo.text());
   } catch (e) {
-    if (!dialogoCopia.open) abrirCopia();   // si se importó desde la bienvenida
-    error.textContent = 'Ese archivo no es una copia de Cinc.';
+    fallo('Ese archivo no es una copia de Cinc.');
+    return;
+  }
+  if (!contenido || typeof contenido !== 'object') {
+    fallo('Ese archivo no es una copia de Cinc.');
+    return;
+  }
+
+  // Si el archivo tiene datos que no son válidos, no se carga nada y se dice qué pasa
+  const rechazar = problemas => {
+    const mas = problemas.length > 3 ? ` …y ${problemas.length - 3} más.` : '';
+    fallo('El archivo tiene datos que no son válidos y no se ha cargado: ' + problemas.slice(0, 3).join(' ') + mas);
+  };
+
+  // Módulos compartidos (sin notas): se añaden a los que ya hay
+  if (contenido.tipo === 'modulos') {
+    const problemas = problemasArchivo(contenido, true);
+    if (problemas.length > 0) { rechazar(problemas); return; }
+    cargarModulos(contenido.modulos);
+    return;
+  }
+
+  let nuevos;
+  if (esCopiaValida(contenido)) {
+    const problemas = problemasArchivo(contenido);
+    if (problemas.length > 0) { rechazar(problemas); return; }
+    nuevos = completarNotas({
+      cursos: contenido.cursos, cursoActual: contenido.cursoActual,
+      modulos: contenido.modulos, notas: contenido.notas, ultimaCopia: contenido.exportado || null
+    });
+  } else if (Array.isArray(contenido.filas)) {
+    nuevos = completarNotas(desdeHoja(contenido.filas));   // copia de la antigua hoja de Google
+  } else {
+    fallo('Ese archivo no es una copia de Cinc.');
     return;
   }
 

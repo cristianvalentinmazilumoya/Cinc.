@@ -295,3 +295,68 @@ function nivel(nota) {
 function formatear(nota) {
   return nota === null ? '—' : formato.format(nota);
 }
+
+
+// ---------- Comprobar archivos que se cargan ----------
+
+// Devuelve la lista de problemas de una copia o de un archivo de módulos
+// (vacía si todo está bien). Así un archivo dañado o editado a mano no puede
+// estropear las medias: se rechaza y se dice qué le pasa.
+function problemasArchivo(contenido, soloModulos = false) {
+  const problemas = [];
+  const esTexto = v => typeof v === 'string' && v.trim() !== '';
+  const esNumero = v => typeof v === 'number' && Number.isFinite(v);
+  const entre = (v, min, max) => esNumero(v) && v >= min && v <= max;
+  const vacio = v => v === null || v === undefined;
+
+  if (!Array.isArray(contenido.modulos)) return ['No tiene una lista de módulos.'];
+  if (!soloModulos && !Array.isArray(contenido.notas)) return ['No tiene una lista de notas.'];
+
+  if (!vacio(contenido.cursos)) {
+    if (!Array.isArray(contenido.cursos)) problemas.push('La lista de cursos no es válida.');
+    else contenido.cursos.forEach((c, i) => {
+      if (!c || !esTexto(c.id) || !esTexto(c.nombre)) problemas.push(`El curso ${i + 1} no tiene nombre o identificador.`);
+    });
+  }
+
+  contenido.modulos.forEach((m, i) => {
+    const quien = m && esTexto(m.sigla) ? `El módulo ${m.sigla}` : `El módulo ${i + 1}`;
+    if (!m || typeof m !== 'object') { problemas.push(`El módulo ${i + 1} no es válido.`); return; }
+    if (!soloModulos && !esTexto(m.id)) problemas.push(`${quien} no tiene identificador.`);
+    if (!esTexto(m.nombre)) problemas.push(`${quien} no tiene nombre.`);
+    if (!esTexto(m.sigla)) problemas.push(`El módulo ${i + 1} no tiene sigla.`);
+    if (!vacio(m.reparto)) {
+      const r = m.reparto;
+      if (!r || !entre(r.examenes, 0, 100) || !entre(r.practicas, 0, 100) ||
+          r.examenes + r.practicas > 100 || r.examenes + r.practicas === 0) {
+        problemas.push(`${quien} tiene un reparto de exámenes y actividades que no es válido.`);
+      }
+    }
+    if (!vacio(m.horas) && !(esNumero(m.horas) && m.horas > 0)) problemas.push(`${quien} tiene unas horas que no son válidas.`);
+    if (!vacio(m.minimos)) {
+      for (const grupo of ['examenes', 'practicas']) {
+        if (!vacio(m.minimos[grupo]) && !entre(m.minimos[grupo], 0, 10)) {
+          problemas.push(`${quien} tiene una nota mínima que no está entre 0 y 10.`);
+        }
+      }
+    }
+  });
+
+  if (!soloModulos) {
+    const ids = new Set(contenido.modulos.map(m => m && m.id));
+    contenido.notas.forEach((n, i) => {
+      const quien = n && esTexto(n.actividad) ? `La nota «${n.actividad}»` : `La nota ${i + 1}`;
+      if (!n || typeof n !== 'object') { problemas.push(`La nota ${i + 1} no es válida.`); return; }
+      if (!esTexto(n.id)) problemas.push(`${quien} no tiene identificador.`);
+      if (!ids.has(n.moduloId)) problemas.push(`${quien} es de un módulo que no está en el archivo.`);
+      if (!esTexto(n.actividad)) problemas.push(`La nota ${i + 1} no tiene nombre.`);
+      if (!esTexto(n.tipo)) problemas.push(`${quien} no tiene tipo (examen o actividad).`);
+      if (!vacio(n.nota) && !entre(n.nota, 0, 10)) problemas.push(`${quien} tiene una nota que no es un número de 0 a 10.`);
+      if (!vacio(n.porcentaje) && !entre(n.porcentaje, 0, 100)) problemas.push(`${quien} tiene un porcentaje que no está entre 0 y 100.`);
+      if (!vacio(n.fecha) && !/^\d{4}-\d{2}-\d{2}$/.test(n.fecha)) problemas.push(`${quien} tiene una fecha que no es válida.`);
+      if (!vacio(n.recuperaDe) && typeof n.recuperaDe !== 'string') problemas.push(`${quien} tiene una recuperación que no es válida.`);
+    });
+  }
+
+  return problemas;
+}

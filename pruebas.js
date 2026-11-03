@@ -154,6 +154,37 @@ caso('Media del curso', '… y dice a qué módulo le faltan',
   mediaDelCurso([{ media: 8, horas: 100, sigla: 'A' }, { media: 6, horas: null, sigla: 'B' }]).sinHoras.join(','), 'B');
 
 
+// ---------- Comprobar archivos ----------
+
+const copiaBuena = () => ({
+  cursos: [{ id: 'c1', nombre: '1.º DAW' }],
+  modulos: [{ id: 'm1', cursoId: 'c1', nombre: 'Bases de dades', sigla: 'BBDD', reparto: { examenes: 60, practicas: 40 }, horas: 165, minimos: { examenes: 5, practicas: null } }],
+  notas: [{ id: 'n1', moduloId: 'm1', actividad: 'Prova 1', tipo: 'Examen', nota: 7.5, porcentaje: 50, comentario: '', fecha: '2026-11-04', recuperaDe: null }]
+});
+caso('Archivos', 'copia correcta: sin problemas', problemasArchivo(copiaBuena()).length, 0);
+caso('Archivos', 'copia antigua (sin cursos, fechas ni horas): sin problemas',
+  problemasArchivo({ modulos: [{ id: 'm1', nombre: 'BBDD', sigla: 'BBDD', reparto: null }],
+    notas: [{ id: 'n1', moduloId: 'm1', actividad: 'Prova', tipo: 'Examen', nota: 9, peso: 1 }] }).length, 0);
+{
+  const c = copiaBuena(); c.notas[0].nota = '7,5';
+  caso('Archivos', 'nota escrita como texto: se rechaza', problemasArchivo(c).length, 1);
+}
+{
+  const c = copiaBuena(); c.notas[0].nota = 12;
+  caso('Archivos', 'nota de 12: se rechaza', problemasArchivo(c).length, 1);
+}
+{
+  const c = copiaBuena(); c.notas[0].moduloId = 'otro';
+  caso('Archivos', 'nota de un módulo que no existe: se rechaza', problemasArchivo(c).length, 1);
+}
+{
+  const c = copiaBuena(); c.modulos[0].reparto = { examenes: 80, practicas: 40 };
+  caso('Archivos', 'reparto que suma 120 %: se rechaza', problemasArchivo(c).length, 1);
+}
+caso('Archivos', 'módulos compartidos sin id: sin problemas',
+  problemasArchivo({ tipo: 'modulos', modulos: [{ nombre: 'BBDD', sigla: 'BBDD', reparto: null, horas: null }] }, true).length, 0);
+
+
 // ---------- Pintar el resultado ----------
 
 const iguales = (a, b) => JSON.stringify(a) === JSON.stringify(b);
