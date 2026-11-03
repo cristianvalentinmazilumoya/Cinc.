@@ -1,7 +1,7 @@
 // Service worker de Cinc: guarda los archivos de la página para que
 // abra aunque no haya conexión.
 
-const CACHE = 'cinc-v9';
+const CACHE = 'cinc-v10';
 
 const ARCHIVOS = [
   './',
@@ -43,7 +43,9 @@ self.addEventListener('fetch', evento => {
   if (evento.request.method !== 'GET' || !esDeEstaWeb) return;
 
   evento.respondWith(
-    fetch(evento.request)
+    // «no-cache»: pregunta siempre al servidor si hay versión nueva, en vez de
+    // fiarse de la copia que guarda el navegador por su cuenta
+    fetch(evento.request, { cache: 'no-cache' })
       .then(respuesta => {
         // Si el servidor da error (por ejemplo un 404 mientras GitHub publica),
         // no se guarda y se usa la copia que ya había
