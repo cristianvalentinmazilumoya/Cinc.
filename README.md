@@ -31,8 +31,17 @@ La primera vez que se abre esta versión, si el navegador aún tenía las notas 
 
 - **Porcentaje de cada actividad:** al añadir una nota se puede indicar cuánto vale dentro de su grupo: dentro de los exámenes o de las prácticas si el módulo tiene reparto, o dentro de todo el módulo si no lo tiene. En cada grupo los porcentajes suman 100 % (por ejemplo, tres prácticas de 20 %, 30 % y 50 %). Si en un grupo hay actividades con porcentaje, las que no lo tienen no cuentan en la media. Si ninguna lo tiene, todas valen lo mismo.
 - **Media de exámenes / prácticas:** media ponderada (nota × porcentaje / suma de porcentajes) de las actividades que ya tienen nota, en proporción. Si de 20 %, 30 % y 50 % solo hay nota de las dos primeras, la media se calcula con esas dos como si fueran el 100 % y la app indica «sobre el 50 % evaluado». Cuando llega la tercera, la media pasa a ser sobre el 100 %.
-- **Media del módulo:** si el módulo tiene reparto oficial (por ejemplo DIW 60/40), se combinan las dos medias con esos porcentajes. Si solo uno de los dos grupos tiene nota, la media del módulo es la de ese grupo y se marca como provisional. Sin reparto, es la media ponderada de todas sus notas.
+- **Media del módulo:** si el módulo tiene reparto oficial (por ejemplo DIW 60/40), se combinan las dos medias con esos porcentajes. Si solo uno de los dos grupos tiene nota, la media del módulo es la de ese grupo y se marca como provisional. Un grupo que vale 0 % en el reparto nunca cuenta (y nunca deja la media como provisional). Sin reparto, es la media ponderada de todas sus notas.
+- **Parte evaluada de la nota final:** si los grupos usan porcentajes, debajo de la media del módulo se indica qué parte de la nota final ya está evaluada (por ejemplo, en un 60/40 con la mitad de cada grupo hecha, «sobre el 50 % evaluado»). Si algún grupo con notas no usa porcentajes, no se puede saber y no se muestra.
 - **Media del curso:** media simple de las medias de los módulos que tienen nota.
+
+### Avisos
+
+- Los porcentajes de un grupo suman más del 100 %.
+- Todos los porcentajes de un grupo suman justo lo que vale el grupo en la nota final (por ejemplo 10 + 10 + 20 = 40 % en las prácticas de un 60/40): seguramente se han puesto sobre la nota final y no dentro del grupo. La media sale igual, pero la parte evaluada no llegaría nunca al 100 %.
+- Un grupo vale 0 % en el reparto pero tiene actividades.
+
+Las notas y los porcentajes aceptan coma o punto decimal (`8,5` o `8.5`).
 
 ## Probar en el Mac
 
@@ -48,7 +57,7 @@ Y abre http://localhost:8000. Para pararlo: `Ctrl + C`.
 
 La web se publica con GitHub Pages desde la rama `main`. Al hacer push a `main`, en un minuto está en línea.
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v15` → `cinc-v16`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v16` → `cinc-v17`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
 
 ## Instalarla
 

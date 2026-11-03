@@ -45,7 +45,9 @@ function nuevoId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-// "9,00" → 9 · "1.234,5" → 1234.5 · "" → null
+// "9,00" → 9 · "8.5" → 8.5 · "1.234,5" → 1234.5 · "" → null
+// Si hay coma, la coma es el decimal y los puntos son de miles;
+// si no, el punto es el decimal (así se escribe en el teclado del Mac).
 function aNumero(valor) {
   if (valor === null || valor === undefined) return null;
   if (typeof valor === 'number') return valor;
@@ -53,7 +55,8 @@ function aNumero(valor) {
   const texto = String(valor).trim();
   if (texto === '') return null;
 
-  const numero = Number(texto.replaceAll('.', '').replace(',', '.'));
+  const limpio = texto.includes(',') ? texto.replaceAll('.', '').replace(',', '.') : texto;
+  const numero = Number(limpio);
   return Number.isNaN(numero) ? null : numero;
 }
 
@@ -195,8 +198,9 @@ function desdeHoja(filas) {
 // - Si en el grupo hay actividades con porcentaje, las que no lo tienen quedan
 //   pendientes y no cuentan en la media.
 // - Si ninguna tiene porcentaje, todas cuentan lo mismo.
-// Devuelve un aviso si los porcentajes del grupo pasan del 100 %.
-function asignarPesos(actividades, nombreGrupo) {
+// Devuelve un aviso si los porcentajes no cuadran. «valeEnLaNota» es lo que
+// vale el grupo en el reparto oficial (null si el módulo no tiene reparto).
+function asignarPesos(actividades, nombreGrupo, valeEnLaNota) {
   const hayPorcentajes = actividades.some(a => a.porcentaje !== null);
 
   for (const a of actividades) {
@@ -205,19 +209,31 @@ function asignarPesos(actividades, nombreGrupo) {
   }
 
   const asignado = actividades.reduce((suma, a) => suma + (a.porcentaje ?? 0), 0);
+  const texto = n => formatoPorcentaje.format(n) + ' %';
+
   if (asignado > 100) {
-    return `Los porcentajes de ${nombreGrupo} suman ${formatoPorcentaje.format(asignado)} %, más del 100 %.`;
+    return `Los porcentajes de ${nombreGrupo} suman ${texto(asignado)}, más del 100 %.`;
+  }
+  // Todas tienen porcentaje y suman justo lo que vale el grupo en la nota final
+  // (por ejemplo 10 + 10 + 20 = 40 %): seguramente se han puesto sobre la nota
+  // final. La media sale igual, pero «sobre el … % evaluado» no llegaría al 100 %.
+  const todasConPorcentaje = actividades.length > 0 && actividades.every(a => a.porcentaje !== null);
+  if (todasConPorcentaje && valeEnLaNota !== null && valeEnLaNota !== 100 && asignado === valeEnLaNota) {
+    return `Los porcentajes de ${nombreGrupo} suman ${texto(asignado)}, lo mismo que valen en la nota final. ` +
+           `Aquí van dentro de ${nombreGrupo}, así que en total deberían sumar 100 %.`;
   }
   return null;
 }
 
 // Qué parte del grupo ya está evaluada: la suma de los porcentajes de las
-// actividades que tienen nota. Si el grupo no usa porcentajes, no se sabe (null).
+// actividades que tienen nota (como mucho 100). Si no hay ninguna nota, es 0.
+// Si hay notas pero el grupo no usa porcentajes, no se puede saber (null).
 function porcentajeEvaluado(actividades) {
+  const conNota = actividades.filter(a => a.nota !== null);
+  if (conNota.length === 0) return 0;
   if (!actividades.some(a => a.porcentaje !== null)) return null;
-  return actividades
-    .filter(a => a.nota !== null && a.porcentaje !== null)
-    .reduce((suma, a) => suma + a.porcentaje, 0);
+  const suma = conNota.reduce((total, a) => total + (a.porcentaje ?? 0), 0);
+  return Math.min(suma, 100);
 }
 
 // Media ponderada (nota × peso / suma de pesos) de las actividades con nota.
@@ -240,14 +256,35 @@ function calcularModulo(modulo) {
 
   // Con reparto, los exámenes y las prácticas van por separado;
   // sin reparto, todas las actividades forman un solo grupo
-  const avisos = modulo.reparto
-    ? [asignarPesos(examenes, 'los exámenes'), asignarPesos(practicas, 'las prácticas')]
-    : [asignarPesos(modulo.actividades, 'este módulo')];
+  const reparto = modulo.reparto;
+  const avisos = reparto
+    ? [asignarPesos(examenes, 'los exámenes', reparto.examenes),
+       asignarPesos(practicas, 'las prácticas', reparto.practicas)]
+    : [asignarPesos(modulo.actividades, 'este módulo', null)];
+
+  // Un grupo que vale 0 % en el reparto nunca cuenta: se avisa si tiene actividades
+  if (reparto && reparto.examenes === 0 && examenes.length > 0) {
+    avisos.push('Los exámenes valen 0 % en el reparto de este módulo, así que no cuentan en la media.');
+  }
+  if (reparto && reparto.practicas === 0 && practicas.length > 0) {
+    avisos.push('Las prácticas valen 0 % en el reparto de este módulo, así que no cuentan en la media.');
+  }
   modulo.avisos = avisos.filter(aviso => aviso !== null);
 
   modulo.evaluadoExamenes = porcentajeEvaluado(examenes);
   modulo.evaluadoPracticas = porcentajeEvaluado(practicas);
-  modulo.evaluadoModulo = modulo.reparto ? null : porcentajeEvaluado(modulo.actividades);
+
+  // Parte de la nota final que ya está evaluada. Solo se puede saber si cada
+  // grupo que cuenta usa porcentajes (o aún no tiene notas).
+  if (reparto) {
+    const ex = reparto.examenes > 0 ? modulo.evaluadoExamenes : 0;
+    const pr = reparto.practicas > 0 ? modulo.evaluadoPracticas : 0;
+    modulo.evaluadoModulo = ex === null || pr === null
+      ? null
+      : (reparto.examenes * ex + reparto.practicas * pr) / 100;
+  } else {
+    modulo.evaluadoModulo = porcentajeEvaluado(modulo.actividades);
+  }
 
   modulo.mediaExamenes = mediaPonderada(examenes);
   modulo.mediaPracticas = mediaPonderada(practicas);
@@ -267,12 +304,14 @@ function calcularModulo(modulo) {
     }
     modulo.media = pesos > 0 ? suma / pesos : null;
 
-    // Si solo hay nota en uno de los dos grupos, la media es provisional:
-    // se calcula con ese grupo, en proporción, hasta que llegue el otro
-    if (modulo.mediaExamenes === null && modulo.mediaPracticas !== null) {
-      modulo.provisional = 'Provisional: de momento solo cuentan las prácticas, porque aún no hay exámenes con nota.';
-    } else if (modulo.mediaPracticas === null && modulo.mediaExamenes !== null) {
-      modulo.provisional = 'Provisional: de momento solo cuentan los exámenes, porque aún no hay prácticas con nota.';
+    // Si hay media pero a uno de los dos grupos (que sí cuenta) aún le falta,
+    // la media es provisional: se calcula con el otro, en proporción
+    if (modulo.media !== null) {
+      if (reparto.examenes > 0 && modulo.mediaExamenes === null) {
+        modulo.provisional = 'Provisional: de momento solo cuentan las prácticas, porque aún no hay exámenes con nota.';
+      } else if (reparto.practicas > 0 && modulo.mediaPracticas === null) {
+        modulo.provisional = 'Provisional: de momento solo cuentan los exámenes, porque aún no hay prácticas con nota.';
+      }
     }
   } else {
     modulo.media = mediaPonderada(modulo.actividades);
