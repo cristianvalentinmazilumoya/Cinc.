@@ -638,3 +638,17 @@ h1 .punto { color: var(--punto); }
 }
 
 .aviso-con-boton p { margin: 0; flex: 1; min-width: 220px; }
+
+.dialogo-subtitulo {
+  font-size: 1rem;
+  margin: 20px 0 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--borde);
+}
+
+/* Segunda línea del resumen: cómo se calcula la media del curso */
+.resumen-nota {
+  display: block;
+  font-size: .82rem;
+  margin-top: 2px;
+}

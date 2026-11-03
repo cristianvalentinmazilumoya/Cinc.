@@ -39,7 +39,7 @@
       <div class="bienvenida-botones">
         <button type="button" id="boton-plantilla" class="boton boton-primario">Usar la plantilla de 1.º DAW</button>
         <button type="button" id="boton-primer-modulo" class="boton">Crear un módulo</button>
-        <button type="button" class="boton boton-enlace" data-accion="importar">Tengo una copia de seguridad</button>
+        <button type="button" class="boton boton-enlace" data-accion="importar">Cargar una copia o unos módulos</button>
       </div>
     </section>
 
@@ -136,6 +136,25 @@
       </div>
       <p class="ayuda">Lo publica el profesor (por ejemplo, 60 % exámenes y 40 % actividades). Hace falta para calcular la media del módulo: si aún no lo sabes, déjalo vacío y la media quedará pendiente.</p>
 
+      <label class="campo campo-corto">
+        <span>Horas</span>
+        <input name="horas" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej.: 165">
+      </label>
+      <p class="ayuda">Opcional. Las horas del módulo en el curso. Con las horas de todos los módulos, la media del curso se pondera como la nota final oficial del ciclo.</p>
+
+      <p class="subtitulo-campos">Nota mínima para aprobar <em>(opcional)</em></p>
+      <div class="campos-fila">
+        <label class="campo">
+          <span>En exámenes</span>
+          <input name="minExamenes" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej.: 5">
+        </label>
+        <label class="campo">
+          <span>En actividades</span>
+          <input name="minPracticas" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej.: 4">
+        </label>
+      </div>
+      <p class="ayuda">Si la media de exámenes o de actividades no llega a este mínimo, no se aprueba el módulo aunque la media dé 5 o más.</p>
+
       <p id="error-modulo" class="error" role="alert"></p>
 
       <div class="dialogo-botones">
@@ -156,7 +175,13 @@
       <button type="button" id="boton-exportar" class="boton boton-primario">Descargar copia</button>
       <button type="button" class="boton" data-accion="importar">Cargar una copia…</button>
     </div>
-    <p class="ayuda">Cargar una copia sustituye los módulos y notas de este dispositivo.</p>
+    <p class="ayuda">Una copia de seguridad sustituye los módulos y notas de este dispositivo. Un archivo de módulos compartidos solo añade o actualiza módulos.</p>
+
+    <h3 class="dialogo-subtitulo">Compartir módulos</h3>
+    <p>Descarga solo tus módulos (nombre, sigla, reparto, horas y notas mínimas), <strong>sin ninguna nota</strong>. Quien lo cargue con «Cargar una copia…» tendrá el curso preparado y sus notas no se tocan.</p>
+    <div class="copia-botones">
+      <button type="button" id="boton-compartir" class="boton">Descargar módulos sin notas</button>
+    </div>
 
     <p id="error-copia" class="error" role="alert"></p>
 

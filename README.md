@@ -20,6 +20,7 @@ Web: https://cristianvalentinmazilumoya.github.io/Cinc./
 2. **Módulos:** la tarjeta «+ Módulo» crea uno nuevo, con su nombre, sigla y cuánto valen los exámenes y las actividades; «Editar módulo» (en el detalle) cambia esos datos o lo borra junto con sus notas.
 3. **Notas:** «+ Añadir nota» arriba, o «+ Añadir nota de …» en el detalle de un módulo. Toca una fila de la tabla para editarla o borrarla. Si aún no hay nota, se deja vacía y sale como pendiente.
 4. **Copia de seguridad:** botón «Copia». «Descargar copia» guarda un archivo `cinc-copia-AAAA-MM-DD.json`; «Cargar una copia» lo recupera en este u otro dispositivo (sustituye lo que haya).
+5. **Compartir módulos:** en «Copia», «Descargar módulos sin notas» guarda `cinc-modulos-AAAA-MM-DD.json` con el nombre, la sigla, el reparto, las horas y las notas mínimas de cada módulo, sin ninguna nota. Otra persona lo carga con «Cargar una copia…»: se añaden los módulos nuevos y se actualizan los de la misma sigla, sin tocar sus notas.
 
 ### Dónde se guardan los datos
 
@@ -34,7 +35,8 @@ La primera vez que se abre esta versión, si el navegador aún tenía las notas 
 - **Media de exámenes / actividades:** media ponderada de las notas puestas, en proporción. Si de 20 %, 30 % y 50 % solo hay nota de las dos primeras, la media se calcula con esas dos como si fueran el 100 % y la app indica «sobre el 50 % evaluado».
 - **Media del módulo:** se combinan las dos medias con el reparto del módulo. Si solo uno de los dos grupos tiene media, la del módulo es la de ese grupo y se marca como provisional, con el motivo. Un grupo que vale 0 % nunca cuenta.
 - **Parte evaluada de la nota final:** si se puede saber (los grupos con notas usan porcentajes), debajo de la media del módulo se indica qué parte de la nota final ya está evaluada.
-- **Media del curso:** media simple de las medias de los módulos que tienen media.
+- **Nota mínima (opcional):** cada módulo puede tener una nota mínima en la media de exámenes y otra en la de actividades. Si una media no llega, el módulo sale como «Bajo el mínimo», en rojo, con un aviso: no se aprueba aunque la media dé 5 o más.
+- **Media del curso:** como la nota final oficial del ciclo en Catalunya, es la media de los módulos ponderada por sus horas. Si a algún módulo con media le faltan las horas, es una media simple y la app dice de qué módulos faltan. Las horas de la plantilla de DAW están vacías: hay que ponerlas a mano (no hay una fuente clara y única de las horas del plan actual).
 
 ### Avisos
 
@@ -60,7 +62,7 @@ Y abre http://localhost:8000. Para pararlo: `Ctrl + C`.
 
 La web se publica con GitHub Pages desde la rama `main`. Al hacer push a `main`, en un minuto está en línea.
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v19` → `cinc-v20`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v20` → `cinc-v21`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
 
 ## Instalarla
 
