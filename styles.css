@@ -740,3 +740,39 @@ h1 .punto { color: var(--punto); }
   .fila-tipo .campo-tipo { flex-basis: 100%; }
   .fila-tipo .campo { margin-bottom: 4px; }
 }
+
+/* ---------- Desplegables y campos con la misma altura ---------- */
+:root {
+  /* Flecha de los desplegables (gris suave del tema claro) */
+  --flecha: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235B6878' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --flecha: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%239AA7B5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+}
+
+.campo input,
+.campo select {
+  height: 44px;
+}
+
+.campo select,
+.necesito select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: var(--flecha);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+  padding-right: 34px;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.necesito select {
+  height: auto;
+  padding: 2px 26px 2px 8px;
+  background-position: right 8px center;
+}
