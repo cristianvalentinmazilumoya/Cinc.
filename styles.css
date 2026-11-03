@@ -652,3 +652,91 @@ h1 .punto { color: var(--punto); }
   font-size: .82rem;
   margin-top: 2px;
 }
+
+/* ---------- Fecha y recuperación debajo del nombre ---------- */
+.detalle-nota {
+  display: block;
+  font-size: .78rem;
+  color: var(--texto-suave);
+}
+
+/* Nota original que ya se ha recuperado */
+.tachada { text-decoration: line-through; opacity: .7; }
+
+/* ---------- ¿Cuánto necesito? ---------- */
+.necesito {
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 0 0 16px;
+}
+
+.necesito p { margin: 6px 0 0; }
+
+.necesito-pregunta { font-weight: 600; }
+
+.necesito select {
+  font: inherit;
+  font-weight: 700;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin: 0 2px;
+}
+
+/* ---------- Próximas fechas ---------- */
+.proximas { margin-bottom: 28px; }
+
+.lista-proximas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.proxima {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.proxima:hover { border-color: var(--texto-suave); }
+.proxima:focus-visible { outline: 3px solid var(--punto); outline-offset: 2px; }
+
+.proxima-fecha {
+  font-weight: 700;
+  min-width: 64px;
+  font-variant-numeric: tabular-nums;
+}
+
+.proxima-nombre { flex: 1; min-width: 0; }
+
+.proxima-cuando {
+  font-size: .82rem;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.campo select:disabled,
+.campo input:disabled { opacity: .6; }
+
+/* En el móvil, el tipo ocupa su propia línea y la nota y el % comparten la siguiente */
+@media (max-width: 600px) {
+  .fila-tipo { flex-wrap: wrap; }
+  .fila-tipo .campo-tipo { flex-basis: 100%; }
+  .fila-tipo .campo { margin-bottom: 4px; }
+}

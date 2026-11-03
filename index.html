@@ -43,6 +43,12 @@
       </div>
     </section>
 
+    <!-- Exámenes y entregas con fecha que aún no tienen nota -->
+    <section id="proximas" class="proximas" aria-labelledby="titulo-proximas" hidden>
+      <h2 id="titulo-proximas" class="titulo-seccion">Próximas fechas</h2>
+      <ul id="lista-proximas" class="lista-proximas"></ul>
+    </section>
+
     <section id="seccion-modulos" aria-labelledby="titulo-modulos">
       <h2 id="titulo-modulos" class="titulo-seccion">Módulos</h2>
       <div id="modulos" class="rejilla"></div>
@@ -71,8 +77,8 @@
         <input name="actividad" type="text" autocomplete="off" placeholder="Ej.: Prova 1, Pt1a, Lliurament 2…">
       </label>
 
-      <div class="campos-fila">
-        <label class="campo">
+      <div class="campos-fila fila-tipo">
+        <label class="campo campo-tipo">
           <span>Tipo</span>
           <select name="tipo">
             <option>Examen</option>
@@ -92,6 +98,18 @@
       </div>
       <p class="ayuda"><strong>Nota:</strong> si aún no la tienes, déjala vacía y saldrá como pendiente.</p>
       <p class="ayuda"><strong id="nombre-ayuda-porcentaje">% en actividades:</strong><span id="ayuda-porcentaje"></span></p>
+
+      <div class="campos-fila">
+        <label class="campo">
+          <span>Fecha <em>(opcional)</em></span>
+          <input name="fecha" type="date">
+        </label>
+        <label class="campo">
+          <span>Recuperación de <em>(opcional)</em></span>
+          <select name="recuperaDe"></select>
+        </label>
+      </div>
+      <p id="ayuda-recuperacion" class="ayuda" hidden></p>
 
       <label class="campo">
         <span>Comentario <em>(opcional)</em></span>

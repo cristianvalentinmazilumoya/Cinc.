@@ -34,6 +34,7 @@ const formatoPorcentaje = new Intl.NumberFormat('es-ES', { maximumFractionDigits
 //           minimos: { examenes, practicas } nota mínima de cada media (null = sin mínimo)
 //           notas: [{ id, moduloId, actividad, tipo, nota, porcentaje, comentario }],
 //           porcentaje: lo que vale la nota dentro de exámenes o actividades (null = sin indicar)
+//           fecha: «2026-11-04» o null · recuperaDe: id de la nota que recupera, o null
 //           ultimaCopia: fecha ISO o null }
 let datos = { modulos: [], notas: [], ultimaCopia: null };
 let modulos = [];            // módulos con sus actividades y medias (se calcula)
@@ -60,6 +61,31 @@ function aNumero(valor) {
   const limpio = texto.includes(',') ? texto.replaceAll('.', '').replace(',', '.') : texto;
   const numero = Number(limpio);
   return Number.isNaN(numero) ? null : numero;
+}
+
+// Fecha de hoy como «2026-11-04» (hora local)
+function hoyISO() {
+  const hoy = new Date();
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+}
+
+// «2026-11-04» → «4 nov 2026» (o «4 nov» si es de este año)
+function formatearFecha(iso) {
+  const [a, m, d] = iso.split('-').map(Number);
+  const fecha = new Date(a, m - 1, d);
+  const opciones = { day: 'numeric', month: 'short' };
+  if (a !== new Date().getFullYear()) opciones.year = 'numeric';
+  return fecha.toLocaleDateString('es-ES', opciones).replace('.', '');
+}
+
+// Días que faltan hasta una fecha: «hoy», «mañana», «en 5 días»
+function cuandoEs(iso) {
+  const [a, m, d] = iso.split('-').map(Number);
+  const [ah, mh, dh] = hoyISO().split('-').map(Number);
+  const dias = Math.round((new Date(a, m - 1, d) - new Date(ah, mh - 1, dh)) / 86400000);
+  if (dias === 0) return 'hoy';
+  if (dias === 1) return 'mañana';
+  return `en ${dias} días`;
 }
 
 // "Módulo" → "modulo", para comparar cabeceras sin tildes ni mayúsculas
@@ -116,6 +142,8 @@ function completarNotas(objeto) {
   objeto.modulos = objeto.modulos.map(completarModulo);
   for (const nota of objeto.notas) {
     if (nota.porcentaje === undefined) nota.porcentaje = null;
+    if (nota.fecha === undefined) nota.fecha = null;
+    if (nota.recuperaDe === undefined) nota.recuperaDe = null;
     delete nota.peso;
     if (nota.tipo !== 'Examen') nota.tipo = 'Actividad';
   }
@@ -270,9 +298,33 @@ function mediaPonderada(notas) {
   return pesos > 0 ? suma / pesos : null;
 }
 
+// Recuperaciones: una nota puede ser la recuperación de otra del mismo módulo.
+// Usa el tipo y el porcentaje de la original y, cuando tiene nota, la sustituye.
+// Mientras no tiene nota, cuenta la original.
+function aplicarRecuperaciones(notas) {
+  const porId = new Map(notas.map(a => [a.id, a]));
+  for (const a of notas) {
+    const original = a.recuperaDe ? porId.get(a.recuperaDe) : null;
+    if (!original || original.recuperaDe || original === a) continue;   // enlace roto: nota normal
+
+    a.esRecuperacion = true;
+    a.nombreOriginal = original.actividad;
+    a.tipo = original.tipo;
+    a.porcentaje = original.porcentaje;
+    if (a.nota !== null) {
+      original.recuperadaCon = a.actividad;
+    } else {
+      a.recuperacionPendiente = true;
+    }
+  }
+  // Las notas que cuentan para las medias
+  return notas.filter(a => !a.recuperadaCon && !a.recuperacionPendiente);
+}
+
 function calcularModulo(modulo) {
-  const examenes = modulo.actividades.filter(a => a.tipo === 'Examen');
-  const practicas = modulo.actividades.filter(a => a.tipo !== 'Examen');
+  const cuentan = aplicarRecuperaciones(modulo.actividades);
+  const examenes = cuentan.filter(a => a.tipo === 'Examen');
+  const practicas = cuentan.filter(a => a.tipo !== 'Examen');
   const reparto = modulo.reparto;
 
   const avisos = [
@@ -292,9 +344,10 @@ function calcularModulo(modulo) {
   modulo.mediaPracticas = mediaPonderada(practicas);
   modulo.evaluadoExamenes = porcentajeEvaluado(examenes);
   modulo.evaluadoPracticas = porcentajeEvaluado(practicas);
-  modulo.numNotas = modulo.actividades.filter(a => a.nota !== null).length;
+  modulo.numNotas = cuentan.filter(a => a.nota !== null).length;
   // Notas puestas que no cuentan porque en su grupo otras sí tienen porcentaje
-  modulo.sinPorcentaje = modulo.actividades.filter(a => a.nota !== null && a.faltaPorcentaje).length;
+  modulo.sinPorcentaje = cuentan.filter(a => a.nota !== null && a.faltaPorcentaje).length;
+  modulo.grupos = { examenes, practicas };
 
   modulo.media = null;
   modulo.evaluadoModulo = null;
@@ -348,6 +401,56 @@ function calcularModulo(modulo) {
         (practicas.some(a => a.nota !== null) ? 'a las actividades con nota les falta el porcentaje.' : 'aún no hay actividades con nota.');
     }
   }
+}
+
+// ¿Qué media hace falta en lo que queda para llegar a «objetivo» en el módulo?
+// Cuando todo esté puesto, la media de cada grupo será
+//   (lo ya puesto + X × lo pendiente) / todo lo del grupo
+// y la del módulo, la combinación con el reparto. Es una recta en X: se despeja.
+// Solo usa las notas añadidas (con o sin nota) y sus porcentajes: no inventa nada.
+function cuantoNecesito(modulo, objetivo) {
+  const reparto = modulo.reparto;
+  if (!reparto) return { tipo: 'sin-reparto' };
+
+  const grupos = [
+    { nombre: 'exámenes', notas: modulo.grupos.examenes, vale: reparto.examenes, minimo: modulo.minimos.examenes },
+    { nombre: 'actividades', notas: modulo.grupos.practicas, vale: reparto.practicas, minimo: modulo.minimos.practicas }
+  ].filter(g => g.vale > 0);
+
+  let fijo = 0;        // parte de la media del módulo que ya está decidida
+  let porX = 0;        // cuánto sube la media del módulo por cada punto de X
+  const valeTotal = grupos.reduce((total, g) => total + g.vale, 0);
+  const pendientes = [];
+  let necesario = -Infinity;
+
+  for (const g of grupos) {
+    const total = g.notas.reduce((suma, a) => suma + a.peso, 0);
+    if (total === 0) return { tipo: 'faltan-notas', grupo: g.nombre };
+
+    const puesto = g.notas.filter(a => a.nota !== null).reduce((suma, a) => suma + a.nota * a.peso, 0) / total;
+    const queda = g.notas.filter(a => a.nota === null && a.peso > 0);
+    const pesoQueda = queda.reduce((suma, a) => suma + a.peso, 0) / total;
+    pendientes.push(...queda);
+
+    fijo += (g.vale / valeTotal) * puesto;
+    porX += (g.vale / valeTotal) * pesoQueda;
+
+    // Nota mínima del grupo
+    if (g.minimo !== null) {
+      if (pesoQueda === 0) {
+        if (puesto < g.minimo) return { tipo: 'imposible', motivo: `la media de ${g.nombre} ya no llega al mínimo de ${formatoPorcentaje.format(g.minimo)}` };
+      } else {
+        necesario = Math.max(necesario, (g.minimo - puesto) / pesoQueda);
+      }
+    }
+  }
+
+  if (porX === 0) return { tipo: 'nada-pendiente' };
+  necesario = Math.max(necesario, (objetivo - fijo) / porX);
+
+  if (necesario > 10) return { tipo: 'imposible', pendientes };
+  if (necesario <= 0) return { tipo: 'asegurado', pendientes };
+  return { tipo: 'necesitas', nota: Math.ceil(necesario * 100) / 100, pendientes };
 }
 
 // Junta cada módulo con sus notas y calcula las medias
@@ -532,9 +635,15 @@ function pintarDetalle() {
   }
   detalle.hidden = false;
 
-  const filas = m.actividades.map(a => {
-    // Una nota no cuenta si aún no está puesta o si le falta el porcentaje
-    const noCuenta = a.nota === null || a.faltaPorcentaje;
+  // Primero las que tienen fecha (de la más antigua a la más nueva); las demás, en el orden en que se añadieron
+  const ordenadas = m.actividades
+    .map((a, i) => ({ a, i }))
+    .sort((x, y) => (x.a.fecha || '9999') .localeCompare(y.a.fecha || '9999') || x.i - y.i)
+    .map(x => x.a);
+
+  const filas = ordenadas.map(a => {
+    // Una nota no cuenta si aún no está puesta, si le falta el porcentaje o si ya está recuperada
+    const noCuenta = a.nota === null || a.faltaPorcentaje || a.recuperadaCon;
     let porcentaje = '';
     if (a.porcentaje !== null) {
       porcentaje = `<span class="porcentaje">${formatoPorcentaje.format(a.porcentaje)} %</span>`;
@@ -543,20 +652,28 @@ function pintarDetalle() {
     }
 
     let estado = a.comentario;
-    if (!estado && a.nota === null) estado = 'Pendiente';
+    if (a.recuperadaCon) estado = `Recuperada con «${a.recuperadaCon}»` + (a.comentario ? ` · ${a.comentario}` : '');
+    else if (!estado && a.nota === null) estado = 'Pendiente';
     else if (!estado && a.faltaPorcentaje) estado = 'No cuenta en la media hasta que tenga porcentaje';
+
+    const detalles = [];
+    if (a.fecha) detalles.push(formatearFecha(a.fecha));
+    if (a.esRecuperacion) detalles.push(`Recuperación de «${a.nombreOriginal}»`);
 
     return `
     <tr class="fila-nota ${noCuenta ? 'pendiente' : ''}" data-id="${a.id}" tabindex="0"
         title="Editar esta nota">
-      <td>${escapar(a.actividad)}</td>
+      <td>
+        ${escapar(a.actividad)}
+        ${detalles.length > 0 ? `<span class="detalle-nota">${escapar(detalles.join(' · '))}</span>` : ''}
+      </td>
       <td>
         <span class="${a.tipo === 'Examen' ? 'examen' : ''}">${escapar(a.tipo)}</span>
         ${porcentaje}
       </td>
       <td>
         <div class="celda-nota">
-          <span class="num ${a.nota === null ? '' : 'color-' + nivel(a.nota)}">${formatear(a.nota)}</span>
+          <span class="num ${a.nota === null ? '' : 'color-' + nivel(a.nota)} ${a.recuperadaCon ? 'tachada' : ''}">${formatear(a.nota)}</span>
           ${barra(a.nota)}
         </div>
       </td>
@@ -607,6 +724,7 @@ function pintarDetalle() {
       : ''}
     ${m.provisional ? `<p class="aviso aviso-modulo">${escapar(m.provisional)}</p>` : ''}
     ${m.avisos.map(aviso => `<p class="aviso aviso-modulo">${escapar(aviso)}</p>`).join('')}
+    ${htmlNecesito(m)}
     <table class="tabla">
       <thead>
         <tr>
@@ -621,6 +739,65 @@ function pintarDetalle() {
     <button type="button" class="boton boton-primario anadir-en-modulo" data-accion="nueva-nota-modulo">
       + Añadir nota de ${escapar(m.sigla)}
     </button>`;
+}
+
+// Recuadro «¿Cuánto necesito?» de un módulo
+let objetivo = 5;
+
+function htmlNecesito(m) {
+  const resultado = cuantoNecesito(m, objetivo);
+  // Sin reparto ya hay un aviso; sin nada pendiente no hace falta
+  if (resultado.tipo === 'sin-reparto' || resultado.tipo === 'nada-pendiente') return '';
+
+  const lista = notas => notas.map(a => `«${a.actividad}»`).join(', ');
+  let texto;
+  switch (resultado.tipo) {
+    case 'faltan-notas':
+      texto = `Para calcularlo, añade los ${resultado.grupo} del módulo (aunque aún no tengan nota).`;
+      break;
+    case 'necesitas':
+      texto = `Necesitas una media de <strong class="num">${formatear(resultado.nota)}</strong> en lo que queda: ${escapar(lista(resultado.pendientes))}.`;
+      break;
+    case 'asegurado':
+      texto = `Ya lo tienes: llegarías aunque sacaras un 0 en lo que queda (${escapar(lista(resultado.pendientes))}).`;
+      break;
+    case 'imposible':
+      texto = resultado.motivo
+        ? `No es posible: ${escapar(resultado.motivo)}.`
+        : `No es posible: aunque sacaras un 10 en todo lo que queda, no llegarías.`;
+      break;
+  }
+
+  const opciones = [5, 6, 7, 8, 9, 10]
+    .map(n => `<option value="${n}" ${n === objetivo ? 'selected' : ''}>${n}</option>`).join('');
+  return `<div class="necesito">
+      <label class="necesito-pregunta">
+        ¿Cuánto necesito para sacar un
+        <select data-accion="objetivo" aria-label="Nota que quieres sacar">${opciones}</select>?
+      </label>
+      <p>${texto}</p>
+    </div>`;
+}
+
+// Próximas fechas: notas con fecha de hoy en adelante que aún no tienen nota
+function pintarProximas() {
+  const hoy = hoyISO();
+  const proximas = modulos
+    .flatMap(m => m.actividades.map(a => ({ a, m })))
+    .filter(({ a }) => a.fecha && a.fecha >= hoy && a.nota === null)
+    .sort((x, y) => x.a.fecha.localeCompare(y.a.fecha))
+    .slice(0, 5);
+
+  document.getElementById('proximas').hidden = proximas.length === 0;
+  document.getElementById('lista-proximas').innerHTML = proximas.map(({ a, m }) => `
+    <li>
+      <button type="button" class="proxima" data-modulo="${m.id}">
+        <span class="proxima-fecha">${escapar(formatearFecha(a.fecha))}</span>
+        <span class="proxima-nombre"><strong>${escapar(m.sigla)}</strong> · ${escapar(a.actividad)}
+          <span class="${a.tipo === 'Examen' ? 'examen' : ''}">(${escapar(a.tipo.toLowerCase())})</span></span>
+        <span class="proxima-cuando">${cuandoEs(a.fecha)}</span>
+      </button>
+    </li>`).join('');
 }
 
 function mostrarAviso(texto, esError) {
@@ -644,6 +821,7 @@ function pintarTodo() {
   document.getElementById('boton-nueva-nota').hidden = !hayModulos;
 
   pintarResumen();
+  pintarProximas();
   pintarTarjetas();
   pintarDetalle();
 }
@@ -671,6 +849,8 @@ function abrirNota(idNota, idModulo) {
   formNota.nota.value = nota && nota.nota !== null ? String(nota.nota).replace('.', ',') : '';
   formNota.porcentaje.value = nota && nota.porcentaje !== null ? String(nota.porcentaje).replace('.', ',') : '';
   formNota.comentario.value = nota ? nota.comentario : '';
+  formNota.fecha.value = nota && nota.fecha ? nota.fecha : '';
+  rellenarRecuperaciones(nota ? nota.recuperaDe : null);
   document.getElementById('borrar-nota').hidden = !nota;
   document.getElementById('error-nota').textContent = '';
   explicarPorcentaje();
@@ -678,6 +858,38 @@ function abrirNota(idNota, idModulo) {
   dialogoNota.showModal();
   formNota.actividad.focus();
 }
+
+// Desplegable «Recuperación de»: notas del módulo elegido que no son a su vez
+// recuperaciones (ni la propia nota)
+function rellenarRecuperaciones(seleccionada) {
+  const opciones = datos.notas.filter(n =>
+    n.moduloId === formNota.modulo.value && n.id !== idEditando && !n.recuperaDe);
+  formNota.recuperaDe.innerHTML = '<option value="">No</option>' + opciones
+    .map(n => `<option value="${n.id}">${escapar(n.actividad)}</option>`).join('');
+  formNota.recuperaDe.value = opciones.some(n => n.id === seleccionada) ? seleccionada : '';
+  aplicarRecuperacionEnFormulario();
+}
+
+// Una recuperación usa el tipo y el % de la nota original: se rellenan y no se pueden cambiar
+function aplicarRecuperacionEnFormulario() {
+  const original = datos.notas.find(n => n.id === formNota.recuperaDe.value);
+  const ayuda = document.getElementById('ayuda-recuperacion');
+  formNota.tipo.disabled = Boolean(original);
+  formNota.porcentaje.disabled = Boolean(original);
+
+  if (original) {
+    formNota.tipo.value = original.tipo;
+    formNota.porcentaje.value = original.porcentaje !== null ? String(original.porcentaje).replace('.', ',') : '';
+    ayuda.textContent = `Cuando tenga nota, sustituirá a «${original.actividad}» en la media, con su mismo tipo y porcentaje. Mientras no la tenga, cuenta la nota original.`;
+    ayuda.hidden = false;
+  } else {
+    ayuda.hidden = true;
+  }
+  explicarPorcentaje();
+}
+
+formNota.recuperaDe.addEventListener('change', aplicarRecuperacionEnFormulario);
+formNota.modulo.addEventListener('change', () => rellenarRecuperaciones(null));
 
 // El campo del porcentaje se llama «% en exámenes» o «% en actividades» según
 // el tipo elegido
@@ -722,6 +934,11 @@ formNota.addEventListener('submit', evento => {
     error.textContent = 'El porcentaje tiene que estar entre 0 y 100 (o déjalo vacío).';
     return;
   }
+  const fecha = formNota.fecha.value;   // el campo de fecha da «2026-11-04» o vacío
+  if (fecha !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    error.textContent = 'La fecha no es válida.';
+    return;
+  }
 
   const valores = {
     moduloId: formNota.modulo.value,
@@ -729,7 +946,9 @@ formNota.addEventListener('submit', evento => {
     tipo: formNota.tipo.value,
     nota: nota,
     porcentaje: porcentaje === 0 ? null : porcentaje,   // 0 % = sin indicar: no cuenta
-    comentario: formNota.comentario.value.trim()
+    comentario: formNota.comentario.value.trim(),
+    fecha: fecha || null,
+    recuperaDe: formNota.recuperaDe.value || null
   };
 
   if (idEditando) {
@@ -750,6 +969,9 @@ document.getElementById('borrar-nota').addEventListener('click', () => {
   if (!confirm(`¿Borrar «${nota.actividad}»?`)) return;
 
   datos.notas = datos.notas.filter(n => n.id !== idEditando);
+  for (const n of datos.notas) {
+    if (n.recuperaDe === idEditando) n.recuperaDe = null;   // su recuperación pasa a ser una nota normal
+  }
   guardar();
   pintarTodo();
   dialogoNota.close();
@@ -1048,6 +1270,24 @@ detalle.addEventListener('click', evento => {
   if (boton && boton.dataset.accion === 'editar-modulo') abrirModulo(idSeleccionado);
   else if (boton && boton.dataset.accion === 'nueva-nota-modulo') abrirNota(null, idSeleccionado);
   else if (fila) abrirNota(fila.dataset.id);
+});
+
+// «¿Cuánto necesito para sacar un …?»
+detalle.addEventListener('change', evento => {
+  if (evento.target.dataset.accion === 'objetivo') {
+    objetivo = Number(evento.target.value);
+    pintarDetalle();
+  }
+});
+
+// Próximas fechas: al tocar una, se abre su módulo
+document.getElementById('lista-proximas').addEventListener('click', evento => {
+  const boton = evento.target.closest('.proxima');
+  if (!boton) return;
+  idSeleccionado = boton.dataset.modulo;
+  pintarTarjetas();
+  pintarDetalle();
+  detalle.scrollIntoView({ behavior: 'smooth' });
 });
 
 detalle.addEventListener('keydown', evento => {
