@@ -579,3 +579,45 @@ h1 .punto { color: var(--punto); }
   font-weight: 400;
   color: var(--texto-suave);
 }
+
+/* ---------- Reparto oficial: barra partida ---------- */
+.dato-reparto { grid-column: 1 / -1; }   /* siempre en su propia fila */
+
+.reparto { max-width: 440px; }
+
+.reparto-barra {
+  display: flex;
+  gap: 3px;
+  height: 8px;
+  margin: 8px 0 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--pista);
+}
+
+.tramo { height: 100%; }
+.tramo-examenes  { background: var(--acento); }
+.tramo-practicas { background: var(--punto); }
+
+.reparto-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: .9rem;
+  font-weight: 400;
+}
+
+.reparto-leyenda span { white-space: nowrap; }
+
+.marca {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.marca-examenes  { background: var(--acento); }
+.marca-practicas { background: var(--punto); }
+
+.reparto-resto { color: var(--texto-suave); }

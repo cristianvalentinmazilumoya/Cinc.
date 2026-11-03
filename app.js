@@ -324,13 +324,25 @@ function textoEvaluado(evaluado) {
   return `<span class="sobre">sobre el ${formatoPorcentaje.format(evaluado)} % evaluado</span>`;
 }
 
-function textoReparto(reparto) {
-  if (!reparto) return 'No publicado: media simple';
-  // Espacios que no se parten ( ): si no cabe, salta de línea solo en el guion
-  let texto = `${reparto.examenes} % exámenes – ${reparto.practicas} % prácticas`;
-  const resto = 100 - reparto.examenes - reparto.practicas;
-  if (resto > 0) texto += ` (el ${resto} % restante aún no cuenta)`;
-  return texto;
+// Reparto oficial: una barra partida en exámenes y prácticas, con su leyenda
+function htmlReparto(reparto) {
+  if (!reparto) {
+    return '<dd class="texto">Sin reparto: todas las notas cuentan en una sola media</dd>';
+  }
+  const { examenes, practicas } = reparto;
+  const resto = 100 - examenes - practicas;
+
+  return `<dd class="reparto">
+      <div class="reparto-barra" aria-hidden="true">
+        <span class="tramo tramo-examenes" style="width: ${examenes}%"></span>
+        <span class="tramo tramo-practicas" style="width: ${practicas}%"></span>
+      </div>
+      <div class="reparto-leyenda">
+        <span><i class="marca marca-examenes"></i>Exámenes <strong class="num">${examenes} %</strong></span>
+        <span><i class="marca marca-practicas"></i>Prácticas <strong class="num">${practicas} %</strong></span>
+        ${resto > 0 ? `<span class="reparto-resto">${resto} % aún no cuenta</span>` : ''}
+      </div>
+    </dd>`;
 }
 
 
@@ -459,9 +471,9 @@ function pintarDetalle() {
         <dt>Media de prácticas</dt>
         <dd class="num">${formatear(m.mediaPracticas)}${textoEvaluado(m.evaluadoPracticas)}</dd>
       </div>
-      <div class="dato">
+      <div class="dato dato-reparto">
         <dt>Reparto oficial</dt>
-        <dd class="texto">${escapar(textoReparto(m.reparto))}</dd>
+        ${htmlReparto(m.reparto)}
       </div>
     </dl>
     ${m.provisional ? `<p class="aviso aviso-modulo">${escapar(m.provisional)}</p>` : ''}
