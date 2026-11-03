@@ -7,6 +7,7 @@ const ARCHIVOS = [
   './',
   'index.html',
   'styles.css',
+  'calculos.js',
   'app.js',
   'manifest.webmanifest',
   'icons/favicon.svg',
