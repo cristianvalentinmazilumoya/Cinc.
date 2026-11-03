@@ -48,7 +48,10 @@
 
     <!-- Exámenes y entregas con fecha que aún no tienen nota -->
     <section id="proximas" class="proximas" aria-labelledby="titulo-proximas" hidden>
-      <h2 id="titulo-proximas" class="titulo-seccion">Próximas fechas</h2>
+      <div class="titulo-con-boton">
+        <h2 id="titulo-proximas" class="titulo-seccion">Próximas fechas</h2>
+        <button type="button" id="boton-calendario" class="boton-enlace boton-pequeno">Añadir al calendario</button>
+      </div>
       <ul id="lista-proximas" class="lista-proximas"></ul>
     </section>
 
@@ -71,6 +74,7 @@
     <footer class="pie">
       Tus notas se guardan solo en este dispositivo. Haz una copia de seguridad de vez en cuando
       desde el botón <strong>Copia</strong>.
+      <button type="button" id="boton-acerca" class="boton-enlace boton-pequeno">Acerca de Cinc</button>
     </footer>
   </main>
 
@@ -219,6 +223,29 @@
     </form>
   </dialog>
 
+  <!-- Acerca de Cinc -->
+  <dialog id="dialogo-acerca" class="dialogo" aria-labelledby="titulo-acerca">
+    <h2 id="titulo-acerca">Cinc<span class="punto">.</span></h2>
+    <p class="ayuda">Versión <span id="version"></span></p>
+    <p>Cinc apunta tus notas de clase y calcula las medias de cada módulo, de cada curso y del ciclo.</p>
+
+    <h3 class="dialogo-subtitulo">Tus datos</h3>
+    <p>Se guardan <strong>solo en este dispositivo</strong>, en el navegador. No hay cuentas ni servidor: nadie más los ve. Por eso, si borras los datos del navegador o cambias de móvil, se pierden. Haz una copia de seguridad de vez en cuando desde «Copia».</p>
+
+    <h3 class="dialogo-subtitulo">Cómo se calculan las medias</h3>
+    <ul class="lista-acerca">
+      <li>Cada módulo necesita su reparto: cuánto valen los exámenes y cuánto las actividades. Sin él, su media queda pendiente.</li>
+      <li>Dentro de los exámenes o de las actividades, cada nota puede tener su porcentaje. Si ninguna lo tiene, todas valen lo mismo.</li>
+      <li>Las notas pendientes no cuentan: la media se calcula en proporción con lo que ya hay.</li>
+      <li>La media del curso y la del ciclo se ponderan por las horas de cada módulo, como la nota final oficial en Catalunya.</li>
+    </ul>
+    <p><a href="pruebas.html" target="_blank" rel="noopener">Comprobar los cálculos</a> (página de pruebas automáticas).</p>
+
+    <div class="dialogo-botones">
+      <button type="button" class="boton" data-cerrar>Cerrar</button>
+    </div>
+  </dialog>
+
   <!-- Copia de seguridad -->
   <dialog id="dialogo-copia" class="dialogo" aria-labelledby="titulo-copia">
     <h2 id="titulo-copia">Copia de seguridad</h2>
@@ -244,6 +271,12 @@
       <button type="button" class="boton" data-cerrar>Cerrar</button>
     </div>
   </dialog>
+
+  <!-- Aviso con «Deshacer» después de borrar -->
+  <div id="deshacer" class="deshacer" role="status" hidden>
+    <span id="deshacer-texto"></span>
+    <button type="button" id="boton-deshacer" class="boton">Deshacer</button>
+  </div>
 
   <input type="file" id="archivo-copia" accept=".json,application/json" hidden>
 

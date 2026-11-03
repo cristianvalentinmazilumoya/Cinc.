@@ -10,7 +10,9 @@ Web: https://cristianvalentinmazilumoya.github.io/Cinc./
 |---|---|
 | `index.html` | Estructura de la página y los formularios (`<dialog>`) |
 | `styles.css` | Diseño (modo claro y oscuro) |
-| `app.js` | Guarda los datos, calcula las medias y pinta la página |
+| `app.js` | Guarda los datos, pinta la página y gestiona los formularios |
+| `calculos.js` | Cálculo de las medias, «¿Cuánto necesito?» y comprobación de archivos (sin tocar la página) |
+| `pruebas.html` + `pruebas.js` | Pruebas automáticas de `calculos.js`: ábrela y todo debe salir en verde |
 | `manifest.webmanifest` + `sw.js` | Lo que hace que la web se pueda instalar y abra sin conexión |
 | `icons/` | Iconos (favicon, PWA, iPhone, Mac) |
 
@@ -21,9 +23,16 @@ Web: https://cristianvalentinmazilumoya.github.io/Cinc./
 2. **Módulos:** la tarjeta «+ Módulo» crea uno nuevo, con su nombre, sigla y cuánto valen los exámenes y las actividades; «Editar módulo» (en el detalle) cambia esos datos o lo borra junto con sus notas.
 3. **Notas:** «+ Añadir nota» arriba, o «+ Añadir nota de …» en el detalle de un módulo. Toca una fila de la tabla para editarla o borrarla. Si aún no hay nota, se deja vacía y sale como pendiente.
 4. **Copia de seguridad:** botón «Copia». «Descargar copia» guarda un archivo `cinc-copia-AAAA-MM-DD.json` con todos los cursos, módulos y notas; en el móvil, «Compartir copia…» abre el menú del sistema para mandarla por WhatsApp, AirDrop, Drive o correo. «Cargar una copia» la recupera en este u otro dispositivo (sustituye lo que haya). Las copias de versiones anteriores, sin cursos, se cargan en un primer curso.
-5. **Fechas:** cada nota puede tener una fecha. Las notas con fecha de hoy en adelante que aún no tienen nota salen arriba, en «Próximas fechas» (las 5 más cercanas); al tocar una se abre su módulo. En la tabla de cada módulo, las notas con fecha van primero, de la más antigua a la más nueva.
+5. **Fechas:** cada nota puede tener una fecha. Las notas con fecha de hoy en adelante que aún no tienen nota salen arriba, en «Próximas fechas» (las 5 más cercanas); al tocar una se abre su módulo. «Añadir al calendario» descarga un archivo `.ics` con todas, con un aviso el día antes a las 9:00, que abren Calendario de Apple, Google Calendar y Outlook. En la tabla de cada módulo, las notas con fecha van primero, de la más antigua a la más nueva.
 6. **Recuperaciones:** en «Recuperación de» se elige la nota que se recupera (del mismo módulo). La recuperación usa el tipo y el porcentaje de la original y, cuando tiene nota, la sustituye en la media; la original sale tachada. Mientras la recuperación no tiene nota, cuenta la original.
 7. **Compartir módulos:** en «Copia», «Descargar módulos sin notas» guarda `cinc-modulos-AAAA-MM-DD.json` con el nombre, la sigla, el reparto, las horas y las notas mínimas de cada módulo, sin ninguna nota. Otra persona lo carga con «Cargar una copia…» en el curso que tenga abierto: se añaden los módulos nuevos y se actualizan los de la misma sigla, sin tocar sus notas.
+
+8. **Deshacer:** al borrar una nota, un módulo o un curso sale abajo «Deshacer» durante 8 segundos.
+9. **Acerca de Cinc** (abajo del todo): versión, dónde se guardan los datos, cómo se calculan las medias y enlace a las pruebas.
+
+Las flechas ← → del detalle de un módulo cambian su orden dentro del curso.
+
+Al cargar una copia o unos módulos, se comprueba cada dato (notas de 0 a 10, porcentajes, fechas, módulos que existen…). Si algo no es válido, no se carga nada y se dice qué falla.
 
 ### Dónde se guardan los datos
 
@@ -52,6 +61,10 @@ La primera vez que se abre esta versión, si el navegador aún tenía las notas 
 
 Las notas y los porcentajes aceptan coma o punto decimal (`8,5` o `8.5`).
 
+## Pruebas
+
+Abre `pruebas.html` (en local o en la web publicada). Cada caso de cálculo sale en verde si da lo esperado y en rojo si no. Si cambias `calculos.js`, vuelve a abrirla.
+
 ## Probar en el Mac
 
 El service worker no funciona abriendo el archivo con doble clic; hace falta un servidor local. Desde la carpeta del proyecto:
@@ -66,7 +79,7 @@ Y abre http://localhost:8000. Para pararlo: `Ctrl + C`.
 
 La web se publica con GitHub Pages desde la rama `main`. Al hacer push a `main`, en un minuto está en línea.
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v24` → `cinc-v25`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v25` → `cinc-v26`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
 
 ## Instalarla
 

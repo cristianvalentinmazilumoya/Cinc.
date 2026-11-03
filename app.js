@@ -2,6 +2,9 @@
 //  Cinc — guarda las notas en el dispositivo y calcula las medias
 // ============================================================
 
+// Versión de la app (sale en «Acerca de Cinc»)
+const VERSION = '2.1';
+
 // Dónde se guardan los datos (localStorage del navegador)
 const CLAVE = 'cinc-datos';
 // Copia de la hoja de Google que guardaba la versión anterior de la app
@@ -449,7 +452,13 @@ function pintarDetalle() {
   detalle.innerHTML = `
     <div class="detalle-cabecera">
       <h2>${escapar(m.nombre)}</h2>
-      <button type="button" class="boton" data-accion="editar-modulo">Editar módulo</button>
+      <div class="detalle-botones">
+        <button type="button" class="boton boton-icono" data-accion="mover-antes"
+                aria-label="Mover el módulo antes" title="Mover antes">←</button>
+        <button type="button" class="boton boton-icono" data-accion="mover-despues"
+                aria-label="Mover el módulo después" title="Mover después">→</button>
+        <button type="button" class="boton" data-accion="editar-modulo">Editar módulo</button>
+      </div>
     </div>
     <dl class="datos">
       <div class="dato">
@@ -544,14 +553,53 @@ function htmlNecesito(m) {
     </div>`;
 }
 
-// Próximas fechas: notas con fecha de hoy en adelante que aún no tienen nota
-function pintarProximas() {
+// Notas con fecha de hoy en adelante que aún no tienen nota (de todos los cursos)
+function notasProximas() {
   const hoy = hoyISO();
-  const proximas = modulos
+  return modulos
     .flatMap(m => m.actividades.map(a => ({ a, m })))
     .filter(({ a }) => a.fecha && a.fecha >= hoy && a.nota === null)
-    .sort((x, y) => x.a.fecha.localeCompare(y.a.fecha))
-    .slice(0, 5);
+    .sort((x, y) => x.a.fecha.localeCompare(y.a.fecha));
+}
+
+// Calendario (.ics): un evento de día completo por cada próxima fecha, con un
+// aviso el día antes a las 9:00. Lo abren Calendario de Apple, Google Calendar y Outlook.
+function archivoCalendario() {
+  // En .ics, las comas, puntos y comas y barras se escriben con «\» delante
+  const textoIcs = t => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+  const dia = iso => iso.replaceAll('-', '');
+  const diaSiguiente = iso => {
+    const [a, m, d] = iso.split('-').map(Number);
+    const f = new Date(a, m - 1, d + 1);
+    return `${f.getFullYear()}${String(f.getMonth() + 1).padStart(2, '0')}${String(f.getDate()).padStart(2, '0')}`;
+  };
+  const ahora = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+
+  const lineas = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Cinc//Notas//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+  for (const { a, m } of notasProximas()) {
+    lineas.push(
+      'BEGIN:VEVENT',
+      `UID:${a.id}@cinc`,
+      `DTSTAMP:${ahora}`,
+      `DTSTART;VALUE=DATE:${dia(a.fecha)}`,
+      `DTEND;VALUE=DATE:${diaSiguiente(a.fecha)}`,
+      `SUMMARY:${textoIcs(`${m.sigla} · ${a.actividad} (${a.tipo.toLowerCase()})`)}`,
+      `DESCRIPTION:${textoIcs(`${m.nombre}. Añadido desde Cinc.`)}`,
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:${textoIcs(`Mañana: ${m.sigla} · ${a.actividad}`)}`,
+      'TRIGGER:-PT15H',
+      'END:VALARM',
+      'END:VEVENT'
+    );
+  }
+  lineas.push('END:VCALENDAR');
+  return new File([lineas.join('\r\n') + '\r\n'], 'cinc-fechas.ics', { type: 'text/calendar' });
+}
+
+// Próximas fechas: notas con fecha de hoy en adelante que aún no tienen nota
+function pintarProximas() {
+  const proximas = notasProximas().slice(0, 5);
 
   document.getElementById('proximas').hidden = proximas.length === 0;
   document.getElementById('lista-proximas').innerHTML = proximas.map(({ a, m }) => `
@@ -634,6 +682,52 @@ function pintarCiclo() {
       </button>`;
   }).join('');
 }
+
+
+// ---------- Orden de los módulos ----------
+
+// Mueve el módulo seleccionado un puesto antes (-1) o después (+1) dentro de su curso
+function moverModulo(direccion) {
+  const actual = datos.modulos.find(m => m.id === idSeleccionado);
+  const delCurso = datos.modulos.filter(m => m.cursoId === actual.cursoId);
+  const vecino = delCurso[delCurso.indexOf(actual) + direccion];
+  if (!vecino) return;   // ya es el primero o el último
+
+  const i = datos.modulos.indexOf(actual);
+  const j = datos.modulos.indexOf(vecino);
+  [datos.modulos[i], datos.modulos[j]] = [datos.modulos[j], datos.modulos[i]];
+  guardar();
+  pintarTodo();
+}
+
+
+// ---------- Deshacer ----------
+
+// Después de borrar, sale un aviso abajo con «Deshacer» durante unos segundos.
+// Se guarda una copia de los datos de antes de borrar.
+let copiaParaDeshacer = null;
+let temporizadorDeshacer = null;
+
+function ofrecerDeshacer(texto, antes) {
+  copiaParaDeshacer = antes;
+  document.getElementById('deshacer-texto').textContent = texto;
+  document.getElementById('deshacer').hidden = false;
+  clearTimeout(temporizadorDeshacer);
+  temporizadorDeshacer = setTimeout(ocultarDeshacer, 8000);
+}
+
+function ocultarDeshacer() {
+  copiaParaDeshacer = null;
+  document.getElementById('deshacer').hidden = true;
+}
+
+document.getElementById('boton-deshacer').addEventListener('click', () => {
+  if (!copiaParaDeshacer) return;
+  datos = JSON.parse(copiaParaDeshacer);
+  guardar();
+  pintarTodo();
+  ocultarDeshacer();
+});
 
 
 // ---------- Formulario de notas ----------
@@ -776,7 +870,7 @@ formNota.addEventListener('submit', evento => {
 
 document.getElementById('borrar-nota').addEventListener('click', () => {
   const nota = datos.notas.find(n => n.id === idEditando);
-  if (!confirm(`¿Borrar «${nota.actividad}»?`)) return;
+  const antes = JSON.stringify(datos);   // para poder deshacer
 
   datos.notas = datos.notas.filter(n => n.id !== idEditando);
   for (const n of datos.notas) {
@@ -785,6 +879,7 @@ document.getElementById('borrar-nota').addEventListener('click', () => {
   guardar();
   pintarTodo();
   dialogoNota.close();
+  ofrecerDeshacer(`Nota «${nota.actividad}» borrada.`, antes);
 });
 
 
@@ -899,12 +994,14 @@ document.getElementById('borrar-modulo').addEventListener('click', () => {
     ? `¿Borrar ${modulo.sigla}? También se borrarán sus ${cuantas} notas.`
     : `¿Borrar ${modulo.sigla}?`;
   if (!confirm(aviso)) return;
+  const antes = JSON.stringify(datos);
 
   datos.modulos = datos.modulos.filter(m => m.id !== idEditando);
   datos.notas = datos.notas.filter(n => n.moduloId !== idEditando);
   guardar();
   pintarTodo();
   dialogoModulo.close();
+  ofrecerDeshacer(`Módulo ${modulo.sigla} borrado.`, antes);
 });
 
 
@@ -959,6 +1056,7 @@ document.getElementById('borrar-curso').addEventListener('click', () => {
     ? `¿Borrar ${curso.nombre}? También se borrarán sus ${suyos.length} módulos y ${notas} notas.`
     : `¿Borrar ${curso.nombre}?`;
   if (!confirm(aviso)) return;
+  const antes = JSON.stringify(datos);
 
   datos.notas = datos.notas.filter(n => !suyos.some(m => m.id === n.moduloId));
   datos.modulos = datos.modulos.filter(m => m.cursoId !== curso.id);
@@ -967,6 +1065,7 @@ document.getElementById('borrar-curso').addEventListener('click', () => {
   guardar();
   pintarTodo();
   dialogoCurso.close();
+  ofrecerDeshacer(`Curso ${curso.nombre} borrado.`, antes);
 });
 
 // Cambiar de curso (barra de arriba y tarjetas de la vista «Ciclo»)
@@ -1203,6 +1302,10 @@ function recordarCopia() {
 
 document.getElementById('boton-nueva-nota').addEventListener('click', () => abrirNota(null));
 document.getElementById('boton-copia').addEventListener('click', abrirCopia);
+document.getElementById('boton-acerca').addEventListener('click', () => {
+  document.getElementById('version').textContent = VERSION;
+  document.getElementById('dialogo-acerca').showModal();
+});
 document.getElementById('boton-plantilla').addEventListener('click', usarPlantilla);
 document.getElementById('boton-primer-modulo').addEventListener('click', () => abrirModulo(null));
 document.getElementById('boton-exportar').addEventListener('click', exportar);
@@ -1241,6 +1344,8 @@ detalle.addEventListener('click', evento => {
   const fila = evento.target.closest('.fila-nota');
 
   if (boton && boton.dataset.accion === 'editar-modulo') abrirModulo(idSeleccionado);
+  else if (boton && boton.dataset.accion === 'mover-antes') moverModulo(-1);
+  else if (boton && boton.dataset.accion === 'mover-despues') moverModulo(1);
   else if (boton && boton.dataset.accion === 'nueva-nota-modulo') abrirNota(null, idSeleccionado);
   else if (fila) abrirNota(fila.dataset.id);
 });
@@ -1251,6 +1356,11 @@ detalle.addEventListener('change', evento => {
     objetivo = Number(evento.target.value);
     pintarDetalle();
   }
+});
+
+// Añadir todas las próximas fechas al calendario
+document.getElementById('boton-calendario').addEventListener('click', () => {
+  descargarArchivo(archivoCalendario());
 });
 
 // Próximas fechas: al tocar una, se abre su módulo
