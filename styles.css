@@ -573,7 +573,7 @@ h1 .punto { color: var(--punto); }
   font-variant-numeric: tabular-nums;
 }
 
-/* Los repartidos automáticamente, en cursiva */
-.porcentaje.automatico { font-style: italic; opacity: .8; }
+/* Actividad sin porcentaje en un grupo que sí los tiene: no cuenta */
+.porcentaje.falta { color: var(--ambar); font-weight: 600; }
 
 .aviso-modulo { margin: -8px 0 16px; }

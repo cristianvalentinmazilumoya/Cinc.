@@ -191,27 +191,23 @@ function desdeHoja(filas) {
 
 // El porcentaje de cada actividad es sobre la nota final del módulo, como lo
 // publican los profesores (por ejemplo, 3 prácticas de 10 %, 10 % y 20 % que
-// forman el 40 % de prácticas). Las actividades sin porcentaje se reparten a
-// partes iguales lo que falte hasta el total del grupo.
-// Devuelve un aviso si los porcentajes no cuadran.
-function repartirPorcentajes(actividades, nombreGrupo, total) {
-  const conPorcentaje = actividades.filter(a => a.porcentaje !== null);
-  const sinPorcentaje = actividades.length - conPorcentaje.length;
-  const asignado = conPorcentaje.reduce((suma, a) => suma + a.porcentaje, 0);
-  const resto = Math.max(total - asignado, 0);
-  const parte = sinPorcentaje > 0 ? resto / sinPorcentaje : 0;
+// forman el 40 % de prácticas).
+// - Si en el grupo hay actividades con porcentaje, las que no lo tienen quedan
+//   pendientes y no cuentan en la media.
+// - Si ninguna tiene porcentaje, todas cuentan lo mismo.
+// Devuelve un aviso si los porcentajes suman más de lo que vale el grupo.
+function asignarPesos(actividades, nombreGrupo, total) {
+  const hayPorcentajes = actividades.some(a => a.porcentaje !== null);
 
   for (const a of actividades) {
-    a.peso = a.porcentaje !== null ? a.porcentaje : parte;
-    a.automatico = a.porcentaje === null;
+    a.faltaPorcentaje = hayPorcentajes && a.porcentaje === null;
+    a.peso = hayPorcentajes ? (a.porcentaje ?? 0) : 1;
   }
 
-  const texto = n => formatoPorcentaje.format(n) + ' %';
+  const asignado = actividades.reduce((suma, a) => suma + (a.porcentaje ?? 0), 0);
   if (asignado > total) {
+    const texto = n => formatoPorcentaje.format(n) + ' %';
     return `Los porcentajes de ${nombreGrupo} suman ${texto(asignado)}, más del ${texto(total)} que valen en total.`;
-  }
-  if (sinPorcentaje > 0 && resto === 0) {
-    return `En ${nombreGrupo} ya está repartido todo el ${texto(total)}: las actividades sin porcentaje no cuentan.`;
   }
   return null;
 }
@@ -234,12 +230,12 @@ function calcularModulo(modulo) {
   const examenes = modulo.actividades.filter(a => a.tipo === 'Examen');
   const practicas = modulo.actividades.filter(a => a.tipo !== 'Examen');
 
-  // Con reparto, los exámenes y las prácticas se reparten su parte por separado;
-  // sin reparto, todas las actividades se reparten el 100 %
+  // Con reparto, los exámenes y las prácticas van por separado;
+  // sin reparto, todas las actividades forman un solo grupo del 100 %
   const avisos = modulo.reparto
-    ? [repartirPorcentajes(examenes, 'los exámenes', modulo.reparto.examenes),
-       repartirPorcentajes(practicas, 'las prácticas', modulo.reparto.practicas)]
-    : [repartirPorcentajes(modulo.actividades, 'este módulo', 100)];
+    ? [asignarPesos(examenes, 'los exámenes', modulo.reparto.examenes),
+       asignarPesos(practicas, 'las prácticas', modulo.reparto.practicas)]
+    : [asignarPesos(modulo.actividades, 'este módulo', 100)];
   modulo.avisos = avisos.filter(aviso => aviso !== null);
 
   modulo.mediaExamenes = mediaPonderada(examenes);
@@ -387,14 +383,27 @@ function pintarDetalle() {
   }
   detalle.hidden = false;
 
-  const filas = m.actividades.map(a => `
-    <tr class="fila-nota ${a.nota === null ? 'pendiente' : ''}" data-id="${a.id}" tabindex="0"
+  const filas = m.actividades.map(a => {
+    // Una actividad no cuenta si no tiene nota o si le falta el porcentaje
+    const noCuenta = a.nota === null || a.faltaPorcentaje;
+    let porcentaje = '';
+    if (a.porcentaje !== null) {
+      porcentaje = `<span class="porcentaje">${formatoPorcentaje.format(a.porcentaje)} %</span>`;
+    } else if (a.faltaPorcentaje) {
+      porcentaje = '<span class="porcentaje falta">Falta el %</span>';
+    }
+
+    let estado = a.comentario;
+    if (!estado && a.nota === null) estado = 'Pendiente';
+    else if (!estado && a.faltaPorcentaje) estado = 'No cuenta en la media hasta que tenga porcentaje';
+
+    return `
+    <tr class="fila-nota ${noCuenta ? 'pendiente' : ''}" data-id="${a.id}" tabindex="0"
         title="Editar esta nota">
       <td>${escapar(a.actividad)}</td>
       <td>
         <span class="${a.tipo === 'Examen' ? 'examen' : ''}">${escapar(a.tipo)}</span>
-        <span class="porcentaje ${a.automatico ? 'automatico' : ''}"
-              title="${a.automatico ? 'Reparto automático' : 'Porcentaje indicado'}">${formatoPorcentaje.format(a.peso)} %</span>
+        ${porcentaje}
       </td>
       <td>
         <div class="celda-nota">
@@ -402,8 +411,9 @@ function pintarDetalle() {
           ${barra(a.nota)}
         </div>
       </td>
-      <td class="col-comentario comentario">${escapar(a.comentario || (a.nota === null ? 'Pendiente' : ''))}</td>
-    </tr>`).join('');
+      <td class="col-comentario comentario">${escapar(estado)}</td>
+    </tr>`;
+  }).join('');
 
   detalle.innerHTML = `
     <div class="detalle-cabecera">
@@ -501,23 +511,25 @@ function abrirNota(idNota, idModulo) {
   formNota.actividad.focus();
 }
 
-// Texto de ayuda del porcentaje según el módulo y el tipo elegidos
+// El campo del porcentaje se llama «% en exámenes» o «% en prácticas» según el
+// tipo elegido, y su ayuda dice cuánto valen en total
 function explicarPorcentaje() {
   const modulo = datos.modulos.find(m => m.id === formNota.modulo.value);
-  if (!modulo) return;
   const esExamen = formNota.tipo.value === 'Examen';
-  let resto;
+  const grupo = esExamen ? 'los exámenes' : 'las prácticas';
+  const etiqueta = esExamen ? '% en exámenes' : '% en prácticas';
 
-  if (modulo.reparto) {
-    const total = esExamen ? modulo.reparto.examenes : modulo.reparto.practicas;
-    resto = `lo que falte hasta el ${total} % de ${esExamen ? 'los exámenes' : 'las prácticas'} ` +
-            `se reparte a partes iguales entre ${esExamen ? 'los' : 'las'} que no tengan porcentaje.`;
-  } else {
-    resto = 'lo que falte hasta el 100 % se reparte a partes iguales entre las actividades sin porcentaje.';
+  let total = '';
+  if (modulo && modulo.reparto) {
+    const valen = esExamen ? modulo.reparto.examenes : modulo.reparto.practicas;
+    total = ` (en total, ${grupo} valen un ${valen} % de la nota)`;
   }
 
+  document.getElementById('etiqueta-porcentaje').textContent = etiqueta;
+  document.getElementById('nombre-ayuda-porcentaje').textContent = etiqueta + ':';
   document.getElementById('ayuda-porcentaje').textContent =
-    `Cuánto vale esta actividad en la nota final de ${modulo.sigla}. Si no lo sabes, déjalo vacío: ` + resto;
+    ` cuánto vale esta actividad dentro de ${grupo}${total}. ` +
+    'Si no lo sabes, déjalo vacío: quedará pendiente y no contará en la media.';
 }
 
 formNota.modulo.addEventListener('change', explicarPorcentaje);

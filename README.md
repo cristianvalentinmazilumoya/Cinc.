@@ -29,8 +29,8 @@ La primera vez que se abre esta versión, si el navegador aún tenía las notas 
 
 ## Cómo se calculan las medias
 
-- **Porcentaje de cada actividad:** al añadir una nota se puede indicar cuánto vale en la nota final del módulo, como lo publica el profesor. Por ejemplo, en un módulo 60 % exámenes / 40 % prácticas, tres prácticas de 10 %, 10 % y 20 %. Las actividades sin porcentaje se reparten a partes iguales lo que falte hasta el total de su grupo (el 40 % en el ejemplo, o el 100 % si el módulo no tiene reparto). Si no se pone ninguno, todas valen lo mismo.
-- **Media de exámenes / prácticas:** media ponderada (nota × porcentaje / suma de porcentajes) de las actividades que ya tienen nota.
+- **Porcentaje de cada actividad:** al añadir una nota se puede indicar cuánto vale en la nota final del módulo, como lo publica el profesor. Por ejemplo, en un módulo 60 % exámenes / 40 % prácticas, tres prácticas de 10 %, 10 % y 20 %. Si en un grupo (exámenes o prácticas) hay actividades con porcentaje, las que no lo tienen quedan pendientes y no cuentan en la media. Si ninguna lo tiene, todas valen lo mismo.
+- **Media de exámenes / prácticas:** media ponderada (nota × porcentaje / suma de porcentajes) de las actividades que ya tienen nota y porcentaje.
 - **Media del módulo:** si el módulo tiene reparto oficial (por ejemplo DIW 60/40), se combinan las dos medias con esos porcentajes, usando solo los grupos que ya tienen nota. Sin reparto, es la media ponderada de todas sus notas.
 - **Media del curso:** media simple de las medias de los módulos que tienen nota.
 
@@ -48,7 +48,7 @@ Y abre http://localhost:8000. Para pararlo: `Ctrl + C`.
 
 La web se publica con GitHub Pages desde la rama `main`. Al hacer push a `main`, en un minuto está en línea.
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v7` → `cinc-v8`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v8` → `cinc-v9`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
 
 ## Instalarla
 
