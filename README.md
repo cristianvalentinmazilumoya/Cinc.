@@ -16,13 +16,14 @@ Web: https://cristianvalentinmazilumoya.github.io/Cinc./
 
 ## Cómo se usa
 
+0. **Cursos:** arriba hay un botón por curso (por ejemplo «1.º DAW» y «2.º DAW») y «+ Curso» para crear otro. Cada curso tiene sus propios módulos; «Editar curso» (junto a «Módulos») cambia el nombre o lo borra con sus módulos y notas. Con dos o más cursos aparece «Ciclo»: la nota de todo el ciclo, ponderada por horas como la oficial, y un resumen por curso.
 1. **Primer uso:** «Usar la plantilla de 1.º DAW» crea los módulos de DAW de golpe. También se pueden crear a mano («Crear un módulo») o cargar una copia de seguridad.
 2. **Módulos:** la tarjeta «+ Módulo» crea uno nuevo, con su nombre, sigla y cuánto valen los exámenes y las actividades; «Editar módulo» (en el detalle) cambia esos datos o lo borra junto con sus notas.
 3. **Notas:** «+ Añadir nota» arriba, o «+ Añadir nota de …» en el detalle de un módulo. Toca una fila de la tabla para editarla o borrarla. Si aún no hay nota, se deja vacía y sale como pendiente.
-4. **Copia de seguridad:** botón «Copia». «Descargar copia» guarda un archivo `cinc-copia-AAAA-MM-DD.json`; «Cargar una copia» lo recupera en este u otro dispositivo (sustituye lo que haya).
+4. **Copia de seguridad:** botón «Copia». «Descargar copia» guarda un archivo `cinc-copia-AAAA-MM-DD.json` con todos los cursos, módulos y notas; en el móvil, «Compartir copia…» abre el menú del sistema para mandarla por WhatsApp, AirDrop, Drive o correo. «Cargar una copia» la recupera en este u otro dispositivo (sustituye lo que haya). Las copias de versiones anteriores, sin cursos, se cargan en un primer curso.
 5. **Fechas:** cada nota puede tener una fecha. Las notas con fecha de hoy en adelante que aún no tienen nota salen arriba, en «Próximas fechas» (las 5 más cercanas); al tocar una se abre su módulo. En la tabla de cada módulo, las notas con fecha van primero, de la más antigua a la más nueva.
 6. **Recuperaciones:** en «Recuperación de» se elige la nota que se recupera (del mismo módulo). La recuperación usa el tipo y el porcentaje de la original y, cuando tiene nota, la sustituye en la media; la original sale tachada. Mientras la recuperación no tiene nota, cuenta la original.
-7. **Compartir módulos:** en «Copia», «Descargar módulos sin notas» guarda `cinc-modulos-AAAA-MM-DD.json` con el nombre, la sigla, el reparto, las horas y las notas mínimas de cada módulo, sin ninguna nota. Otra persona lo carga con «Cargar una copia…»: se añaden los módulos nuevos y se actualizan los de la misma sigla, sin tocar sus notas.
+7. **Compartir módulos:** en «Copia», «Descargar módulos sin notas» guarda `cinc-modulos-AAAA-MM-DD.json` con el nombre, la sigla, el reparto, las horas y las notas mínimas de cada módulo, sin ninguna nota. Otra persona lo carga con «Cargar una copia…» en el curso que tenga abierto: se añaden los módulos nuevos y se actualizan los de la misma sigla, sin tocar sus notas.
 
 ### Dónde se guardan los datos
 
@@ -38,7 +39,7 @@ La primera vez que se abre esta versión, si el navegador aún tenía las notas 
 - **Media del módulo:** se combinan las dos medias con el reparto del módulo. Si solo uno de los dos grupos tiene media, la del módulo es la de ese grupo y se marca como provisional, con el motivo. Un grupo que vale 0 % nunca cuenta.
 - **Parte evaluada de la nota final:** si se puede saber (los grupos con notas usan porcentajes), debajo de la media del módulo se indica qué parte de la nota final ya está evaluada.
 - **Nota mínima (opcional):** cada módulo puede tener una nota mínima en la media de exámenes y otra en la de actividades. Si una media no llega, el módulo sale como «Bajo el mínimo», en rojo, con un aviso: no se aprueba aunque la media dé 5 o más.
-- **¿Cuánto necesito?:** en cada módulo con reparto y notas pendientes, la app calcula qué media hace falta en lo que queda para sacar un 5 (o la nota que se elija, de 5 a 10). Usa solo las notas añadidas y sus porcentajes, y tiene en cuenta las notas mínimas. Si es imposible o ya está asegurado, lo dice.
+- **¿Cuánto necesito?:** en cada módulo con reparto y notas pendientes, la app calcula qué media hace falta en lo que queda para sacar un 5 (o la nota que se elija, de 5 a 10). Usa solo las notas añadidas y sus porcentajes, y tiene en cuenta las notas mínimas. Una recuperación pendiente cuenta como algo que queda: su nota sustituirá a la original. Si es imposible o ya está asegurado, lo dice.
 - **Media del curso:** como la nota final oficial del ciclo en Catalunya, es la media de los módulos ponderada por sus horas. Si a algún módulo con media le faltan las horas, es una media simple y la app dice de qué módulos faltan. Las horas de la plantilla de DAW están vacías: hay que ponerlas a mano (no hay una fuente clara y única de las horas del plan actual).
 
 ### Avisos
@@ -65,7 +66,7 @@ Y abre http://localhost:8000. Para pararlo: `Ctrl + C`.
 
 La web se publica con GitHub Pages desde la rama `main`. Al hacer push a `main`, en un minuto está en línea.
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v23` → `cinc-v24`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v24` → `cinc-v25`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
 
 ## Instalarla
 

@@ -30,6 +30,9 @@
       </div>
     </header>
 
+    <!-- Cursos (1.º, 2.º…) y la vista de todo el ciclo -->
+    <nav id="cursos" class="cursos" aria-label="Cursos"></nav>
+
     <p id="aviso" class="aviso" hidden></p>
 
     <!-- Primer uso: todavía no hay módulos -->
@@ -49,8 +52,17 @@
       <ul id="lista-proximas" class="lista-proximas"></ul>
     </section>
 
+    <!-- Vista «Ciclo»: un resumen por curso -->
+    <section id="seccion-ciclo" aria-labelledby="titulo-ciclo" hidden>
+      <h2 id="titulo-ciclo" class="titulo-seccion">Cursos</h2>
+      <div id="lista-cursos" class="rejilla"></div>
+    </section>
+
     <section id="seccion-modulos" aria-labelledby="titulo-modulos">
-      <h2 id="titulo-modulos" class="titulo-seccion">Módulos</h2>
+      <div class="titulo-con-boton">
+        <h2 id="titulo-modulos" class="titulo-seccion">Módulos</h2>
+        <button type="button" class="boton-enlace boton-pequeno" data-accion="editar-curso">Editar curso</button>
+      </div>
       <div id="modulos" class="rejilla"></div>
     </section>
 
@@ -136,10 +148,16 @@
         <input name="nombre" type="text" autocomplete="off" placeholder="Ej.: Bases de dades (0484)">
       </label>
 
-      <label class="campo campo-corto">
-        <span>Sigla</span>
-        <input name="sigla" type="text" autocomplete="off" maxlength="6" placeholder="BBDD">
-      </label>
+      <div class="campos-fila">
+        <label class="campo campo-corto">
+          <span>Sigla</span>
+          <input name="sigla" type="text" autocomplete="off" maxlength="6" placeholder="BBDD">
+        </label>
+        <label class="campo">
+          <span>Curso</span>
+          <select name="curso"></select>
+        </label>
+      </div>
 
       <p class="subtitulo-campos">Cuánto valen en la nota del módulo</p>
       <div class="campos-fila">
@@ -183,6 +201,24 @@
     </form>
   </dialog>
 
+  <!-- Formulario: nuevo curso / editar curso -->
+  <dialog id="dialogo-curso" class="dialogo" aria-labelledby="titulo-curso">
+    <form id="form-curso" novalidate>
+      <h2 id="titulo-curso">Nuevo curso</h2>
+      <label class="campo">
+        <span>Nombre</span>
+        <input name="nombre" type="text" autocomplete="off" maxlength="30" placeholder="Ej.: 2.º DAW">
+      </label>
+      <p class="ayuda">Cada curso tiene sus propios módulos. En «Ciclo» se ve la nota de todos los cursos juntos.</p>
+      <p id="error-curso" class="error" role="alert"></p>
+      <div class="dialogo-botones">
+        <button type="button" id="borrar-curso" class="boton boton-peligro">Borrar</button>
+        <button type="button" class="boton" data-cerrar>Cancelar</button>
+        <button type="submit" class="boton boton-primario">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- Copia de seguridad -->
   <dialog id="dialogo-copia" class="dialogo" aria-labelledby="titulo-copia">
     <h2 id="titulo-copia">Copia de seguridad</h2>
@@ -190,6 +226,7 @@
     <p class="ayuda">Última copia: <strong id="ultima-copia">nunca</strong></p>
 
     <div class="copia-botones">
+      <button type="button" id="boton-compartir-copia" class="boton boton-primario" hidden>Compartir copia…</button>
       <button type="button" id="boton-exportar" class="boton boton-primario">Descargar copia</button>
       <button type="button" class="boton" data-accion="importar">Cargar una copia…</button>
     </div>

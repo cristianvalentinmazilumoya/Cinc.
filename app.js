@@ -29,14 +29,16 @@ const formato = new Intl.NumberFormat('es-ES', {
 // Porcentajes: «45», «33,3»
 const formatoPorcentaje = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
 
-// datos = { modulos: [{ id, nombre, sigla, reparto, horas, minimos }],
+// datos = { cursos: [{ id, nombre }], cursoActual: id del curso o «ciclo»,
+//           modulos: [{ id, cursoId, nombre, sigla, reparto, horas, minimos }],
 //           horas: horas del módulo, para ponderar la media del curso (null = sin indicar)
 //           minimos: { examenes, practicas } nota mínima de cada media (null = sin mínimo)
 //           notas: [{ id, moduloId, actividad, tipo, nota, porcentaje, comentario }],
 //           porcentaje: lo que vale la nota dentro de exámenes o actividades (null = sin indicar)
 //           fecha: «2026-11-04» o null · recuperaDe: id de la nota que recupera, o null
 //           ultimaCopia: fecha ISO o null }
-let datos = { modulos: [], notas: [], ultimaCopia: null };
+let datos = { cursos: [], cursoActual: null, modulos: [], notas: [], ultimaCopia: null };
+const CICLO = 'ciclo';   // valor de «cursoActual» cuando se ve todo el ciclo
 let modulos = [];            // módulos con sus actividades y medias (se calcula)
 let idSeleccionado = null;   // módulo que se ve en el detalle
 let idEditando = null;       // nota o módulo abierto en un formulario (null = nuevo)
@@ -127,6 +129,7 @@ function completarModulo(modulo) {
   return {
     ...modulo,
     id: modulo.id || nuevoId(),
+    cursoId: modulo.cursoId ?? null,
     reparto: modulo.reparto ?? null,
     horas: modulo.horas ?? null,
     minimos: {
@@ -140,6 +143,19 @@ function completarModulo(modulo) {
 // «peso» (1 = normal) pasó a ser «porcentaje», y el tipo «Práctica» ahora es «Actividad»
 function completarNotas(objeto) {
   objeto.modulos = objeto.modulos.map(completarModulo);
+
+  // Cursos: las versiones anteriores no tenían; todo va a un primer curso
+  if (!Array.isArray(objeto.cursos) || objeto.cursos.length === 0) {
+    const esDAW = objeto.modulos.some(m => PLANTILLA_DAW1.some(p => p.sigla === m.sigla));
+    objeto.cursos = [{ id: nuevoId(), nombre: esDAW ? '1.º DAW' : 'Mi curso' }];
+  }
+  for (const m of objeto.modulos) {
+    if (!objeto.cursos.some(c => c.id === m.cursoId)) m.cursoId = objeto.cursos[0].id;
+  }
+  if (objeto.cursoActual !== CICLO && !objeto.cursos.some(c => c.id === objeto.cursoActual)) {
+    objeto.cursoActual = objeto.cursos[0].id;
+  }
+
   for (const nota of objeto.notas) {
     if (nota.porcentaje === undefined) nota.porcentaje = null;
     if (nota.fecha === undefined) nota.fecha = null;
@@ -160,11 +176,11 @@ function cargarDatos() {
   try {
     const antiguos = JSON.parse(localStorage.getItem(CLAVE_ANTIGUA));
     if (antiguos && Array.isArray(antiguos.filas)) {
-      return { datos: desdeHoja(antiguos.filas), migrado: true };
+      return { datos: completarNotas(desdeHoja(antiguos.filas)), migrado: true };
     }
   } catch (e) { /* no había hoja */ }
 
-  return { datos: { modulos: [], notas: [], ultimaCopia: null }, migrado: false };
+  return { datos: completarNotas({ modulos: [], notas: [], ultimaCopia: null }), migrado: false };
 }
 
 
@@ -315,6 +331,7 @@ function aplicarRecuperaciones(notas) {
       original.recuperadaCon = a.actividad;
     } else {
       a.recuperacionPendiente = true;
+      original.recuperacionEnCurso = a.actividad;   // para «¿Cuánto necesito?»
     }
   }
   // Las notas que cuentan para las medias
@@ -427,10 +444,15 @@ function cuantoNecesito(modulo, objetivo) {
     const total = g.notas.reduce((suma, a) => suma + a.peso, 0);
     if (total === 0) return { tipo: 'faltan-notas', grupo: g.nombre };
 
-    const puesto = g.notas.filter(a => a.nota !== null).reduce((suma, a) => suma + a.nota * a.peso, 0) / total;
-    const queda = g.notas.filter(a => a.nota === null && a.peso > 0);
+    // Una nota con una recuperación pendiente se cuenta como pendiente: su
+    // nota la decidirá la recuperación
+    const enJuego = a => a.nota === null || Boolean(a.recuperacionEnCurso);
+    const puesto = g.notas.filter(a => !enJuego(a)).reduce((suma, a) => suma + a.nota * a.peso, 0) / total;
+    const queda = g.notas.filter(a => enJuego(a) && a.peso > 0);
     const pesoQueda = queda.reduce((suma, a) => suma + a.peso, 0) / total;
-    pendientes.push(...queda);
+    pendientes.push(...queda.map(a => ({
+      actividad: a.recuperacionEnCurso ? `${a.recuperacionEnCurso} (recuperación)` : a.actividad
+    })));
 
     fijo += (g.vale / valeTotal) * puesto;
     porX += (g.vale / valeTotal) * pesoQueda;
@@ -478,6 +500,23 @@ function mediaDelCurso(lista) {
   }
   const suma = conMedia.reduce((total, m) => total + m.media, 0);
   return { media: suma / conMedia.length, ponderada: false, sinHoras };
+}
+
+
+// ---------- Cursos ----------
+
+function enCiclo() {
+  return datos.cursoActual === CICLO;
+}
+
+// Curso que se está viendo (en la vista «Ciclo», el primero)
+function cursoActivo() {
+  return datos.cursos.find(c => c.id === datos.cursoActual) || datos.cursos[0];
+}
+
+// Módulos del curso que se está viendo (en «Ciclo», todos)
+function modulosVisibles() {
+  return enCiclo() ? modulos : modulos.filter(m => m.cursoId === cursoActivo().id);
 }
 
 
@@ -552,11 +591,13 @@ function barra(nota, color = nivel(nota)) {
 
 function pintarResumen() {
   const resumen = document.getElementById('resumen');
-  const curso = mediaDelCurso(modulos);
-  const notas = modulos.reduce((total, m) => total + m.numNotas, 0);
-  const conNota = modulos.filter(m => m.media !== null).length;
+  const visibles = modulosVisibles();
+  const curso = mediaDelCurso(visibles);
+  const notas = visibles.reduce((total, m) => total + m.numNotas, 0);
+  const conNota = visibles.filter(m => m.media !== null).length;
+  const ciclo = enCiclo();
 
-  if (modulos.length === 0) {
+  if (visibles.length === 0) {
     resumen.textContent = 'Tus notas, siempre a mano.';
   } else if (notas === 0) {
     resumen.textContent = 'Aún no hay notas. Pulsa «+ Añadir nota» para añadir la primera.';
@@ -569,16 +610,21 @@ function pintarResumen() {
     const lista = siglas => siglas.length === 1
       ? siglas[0]
       : siglas.slice(0, -1).join(', ') + ' y ' + siglas[siglas.length - 1];
-    const tipoMedia = curso.ponderada
+    let tipoMedia = curso.ponderada
       ? '<span class="resumen-nota">Ponderada por las horas de cada módulo, como la nota final oficial del ciclo.</span>'
       : `<span class="resumen-nota">Es una media simple. Para ponderarla por horas, como la nota oficial, ` +
         `indica las horas de ${escapar(lista(curso.sinHoras))}.</span>`;
+    if (ciclo) {
+      tipoMedia += '<span class="resumen-nota">Para aprobar el ciclo hay que aprobar todos sus módulos.</span>';
+    }
 
+    const titulo = ciclo ? 'Nota del ciclo' : `Media de ${escapar(cursoActivo().nombre)}`;
+    const cursos = ciclo ? ` de <strong class="num">${datos.cursos.length}</strong> cursos` : '';
     resumen.innerHTML =
-      `Media del curso <strong class="num">${formatear(curso.media)}</strong> con ` +
+      `${titulo} <strong class="num">${formatear(curso.media)}</strong> con ` +
       `<strong class="num">${notas}</strong> ${notas === 1 ? 'nota puesta' : 'notas puestas'} en ` +
-      `<strong class="num">${conNota}</strong> ${conNota === 1 ? 'módulo' : 'módulos'}. ` +
-      `Toca un módulo para ver todas sus notas.` + tipoMedia;
+      `<strong class="num">${conNota}</strong> ${conNota === 1 ? 'módulo' : 'módulos'}${cursos}. ` +
+      (ciclo ? 'Toca un curso para ver sus módulos.' : 'Toca un módulo para ver todas sus notas.') + tipoMedia;
   }
 }
 
@@ -586,7 +632,7 @@ function pintarTarjetas() {
   const contenedor = document.getElementById('modulos');
   contenedor.innerHTML = '';
 
-  for (const m of modulos) {
+  for (const m of modulosVisibles()) {
     const boton = document.createElement('button');
     boton.type = 'button';
     boton.className = 'tarjeta';
@@ -810,20 +856,64 @@ function mostrarAviso(texto, esError) {
 // Vuelve a calcular y pintar todo después de cualquier cambio
 function pintarTodo() {
   calcularTodo();
+  const visibles = modulosVisibles();
 
-  if (!modulos.some(m => m.id === idSeleccionado)) {
-    idSeleccionado = modulos.length > 0 ? modulos[0].id : null;
+  if (!visibles.some(m => m.id === idSeleccionado)) {
+    idSeleccionado = visibles.length > 0 ? visibles[0].id : null;
   }
 
-  const hayModulos = modulos.length > 0;
-  document.getElementById('bienvenida').hidden = hayModulos;
-  document.getElementById('seccion-modulos').hidden = !hayModulos;
-  document.getElementById('boton-nueva-nota').hidden = !hayModulos;
+  const ciclo = enCiclo();
+  const hayModulos = visibles.length > 0;
+  document.getElementById('bienvenida').hidden = hayModulos || ciclo;
+  document.getElementById('seccion-modulos').hidden = !hayModulos || ciclo;
+  document.getElementById('seccion-ciclo').hidden = !ciclo;
+  document.getElementById('boton-nueva-nota').hidden = !hayModulos || ciclo;
 
+  pintarCursos();
   pintarResumen();
   pintarProximas();
-  pintarTarjetas();
-  pintarDetalle();
+  if (ciclo) {
+    pintarCiclo();
+    document.getElementById('detalle').hidden = true;
+  } else {
+    pintarTarjetas();
+    pintarDetalle();
+  }
+}
+
+// Barra de cursos: uno por curso, «Ciclo» (si hay más de uno) y «+ Curso»
+function pintarCursos() {
+  const barra = document.getElementById('cursos');
+  const botones = datos.cursos.map(c => `
+    <button type="button" class="curso ${c.id === datos.cursoActual ? 'activo' : ''}" data-curso="${c.id}"
+            aria-pressed="${c.id === datos.cursoActual}">${escapar(c.nombre)}</button>`);
+  if (datos.cursos.length > 1) {
+    botones.push(`<button type="button" class="curso ${enCiclo() ? 'activo' : ''}" data-curso="${CICLO}"
+            aria-pressed="${enCiclo()}">Ciclo</button>`);
+  }
+  botones.push('<button type="button" class="curso curso-nuevo" data-accion="nuevo-curso">+ Curso</button>');
+  barra.innerHTML = botones.join('');
+}
+
+// Vista «Ciclo»: una tarjeta por curso con su media
+function pintarCiclo() {
+  document.getElementById('lista-cursos').innerHTML = datos.cursos.map(c => {
+    const suyos = modulos.filter(m => m.cursoId === c.id);
+    const media = mediaDelCurso(suyos).media;
+    const conMedia = suyos.filter(m => m.media !== null).length;
+    return `
+      <button type="button" class="tarjeta" data-curso="${c.id}">
+        <div class="tarjeta-arriba">
+          <span class="sigla">${escapar(c.nombre)}</span>
+          <span class="pastilla ${nivel(media)}">${valoracion(media)}</span>
+        </div>
+        <div class="nombre-modulo">${suyos.length} ${suyos.length === 1 ? 'módulo' : 'módulos'}, ${conMedia} con media</div>
+        ${media === null
+          ? '<div class="media-grande sin-nota color-sin">Sin nota</div>'
+          : `<div class="media-grande num color-${nivel(media)}">${formatear(media)}</div>`}
+        ${barra(media)}
+      </button>`;
+  }).join('');
 }
 
 
@@ -839,6 +929,7 @@ function abrirNota(idNota, idModulo) {
 
   // Lista de módulos del desplegable
   formNota.modulo.innerHTML = datos.modulos
+    .filter(m => m.cursoId === cursoActivo().id || (nota && m.id === nota.moduloId))
     .map(m => `<option value="${m.id}">${escapar(m.sigla)} · ${escapar(m.nombre)}</option>`)
     .join('');
 
@@ -990,6 +1081,9 @@ function abrirModulo(idModulo) {
   document.getElementById('titulo-modulo').textContent = modulo ? 'Editar módulo' : 'Nuevo módulo';
   formModulo.nombre.value = modulo ? modulo.nombre : '';
   formModulo.sigla.value = modulo ? modulo.sigla : '';
+  formModulo.curso.innerHTML = datos.cursos
+    .map(c => `<option value="${c.id}">${escapar(c.nombre)}</option>`).join('');
+  formModulo.curso.value = modulo ? modulo.cursoId : cursoActivo().id;
   formModulo.examenes.value = modulo && modulo.reparto ? String(modulo.reparto.examenes).replace('.', ',') : '';
   formModulo.practicas.value = modulo && modulo.reparto ? String(modulo.reparto.practicas).replace('.', ',') : '';
   const comoTexto = valor => (valor === null || valor === undefined ? '' : String(valor).replace('.', ','));
@@ -1020,8 +1114,9 @@ formModulo.addEventListener('submit', evento => {
     error.textContent = 'Escribe el nombre y la sigla del módulo.';
     return;
   }
-  if (datos.modulos.some(m => m.sigla === sigla && m.id !== idEditando)) {
-    error.textContent = `Ya tienes un módulo con la sigla ${sigla}.`;
+  // La sigla no se puede repetir dentro de un mismo curso
+  if (datos.modulos.some(m => m.sigla === sigla && m.cursoId === formModulo.curso.value && m.id !== idEditando)) {
+    error.textContent = `Ya tienes un módulo con la sigla ${sigla} en ese curso.`;
     return;
   }
   // Los dos porcentajes, o ninguno (entonces la media del módulo queda pendiente)
@@ -1062,7 +1157,7 @@ formModulo.addEventListener('submit', evento => {
     return;
   }
 
-  const valores = { nombre, sigla, reparto, horas: textoHoras === '' ? null : horas, minimos };
+  const valores = { nombre, sigla, reparto, horas: textoHoras === '' ? null : horas, minimos, cursoId: formModulo.curso.value };
   if (idEditando) {
     Object.assign(datos.modulos.find(m => m.id === idEditando), valores);
   } else {
@@ -1071,6 +1166,8 @@ formModulo.addEventListener('submit', evento => {
     idSeleccionado = nuevo.id;
   }
 
+  // Se pasa a ver el curso del módulo (por si se ha cambiado de curso)
+  datos.cursoActual = valores.cursoId;
   guardar();
   pintarTodo();
   dialogoModulo.close();
@@ -1092,12 +1189,100 @@ document.getElementById('borrar-modulo').addEventListener('click', () => {
 });
 
 
+// ---------- Formulario de cursos ----------
+
+const dialogoCurso = document.getElementById('dialogo-curso');
+const formCurso = document.getElementById('form-curso');
+let idCursoEditando = null;
+
+function abrirCurso(idCurso) {
+  idCursoEditando = idCurso;
+  const curso = datos.cursos.find(c => c.id === idCurso);
+  document.getElementById('titulo-curso').textContent = curso ? 'Editar curso' : 'Nuevo curso';
+  formCurso.nombre.value = curso ? curso.nombre : '';
+  // No se puede borrar el único curso
+  document.getElementById('borrar-curso').hidden = !curso || datos.cursos.length === 1;
+  document.getElementById('error-curso').textContent = '';
+  dialogoCurso.showModal();
+  formCurso.nombre.focus();
+}
+
+formCurso.addEventListener('submit', evento => {
+  evento.preventDefault();
+  const nombre = formCurso.nombre.value.trim();
+  const error = document.getElementById('error-curso');
+  if (nombre === '') {
+    error.textContent = 'Escribe un nombre para el curso (por ejemplo, 2.º DAW).';
+    return;
+  }
+  if (datos.cursos.some(c => c.nombre.toLowerCase() === nombre.toLowerCase() && c.id !== idCursoEditando)) {
+    error.textContent = `Ya tienes un curso llamado «${nombre}».`;
+    return;
+  }
+
+  if (idCursoEditando) {
+    datos.cursos.find(c => c.id === idCursoEditando).nombre = nombre;
+  } else {
+    const nuevo = { id: nuevoId(), nombre };
+    datos.cursos.push(nuevo);
+    datos.cursoActual = nuevo.id;
+  }
+  guardar();
+  pintarTodo();
+  dialogoCurso.close();
+});
+
+document.getElementById('borrar-curso').addEventListener('click', () => {
+  const curso = datos.cursos.find(c => c.id === idCursoEditando);
+  const suyos = datos.modulos.filter(m => m.cursoId === curso.id);
+  const notas = datos.notas.filter(n => suyos.some(m => m.id === n.moduloId)).length;
+  const aviso = suyos.length > 0
+    ? `¿Borrar ${curso.nombre}? También se borrarán sus ${suyos.length} módulos y ${notas} notas.`
+    : `¿Borrar ${curso.nombre}?`;
+  if (!confirm(aviso)) return;
+
+  datos.notas = datos.notas.filter(n => !suyos.some(m => m.id === n.moduloId));
+  datos.modulos = datos.modulos.filter(m => m.cursoId !== curso.id);
+  datos.cursos = datos.cursos.filter(c => c.id !== curso.id);
+  datos.cursoActual = datos.cursos[0].id;
+  guardar();
+  pintarTodo();
+  dialogoCurso.close();
+});
+
+// Cambiar de curso (barra de arriba y tarjetas de la vista «Ciclo»)
+function irACurso(idCurso) {
+  datos.cursoActual = idCurso;
+  guardar();
+  pintarTodo();
+}
+
+document.getElementById('cursos').addEventListener('click', evento => {
+  const boton = evento.target.closest('button');
+  if (!boton) return;
+  if (boton.dataset.accion === 'nuevo-curso') abrirCurso(null);
+  else irACurso(boton.dataset.curso);
+});
+
+document.getElementById('lista-cursos').addEventListener('click', evento => {
+  const tarjeta = evento.target.closest('[data-curso]');
+  if (tarjeta) irACurso(tarjeta.dataset.curso);
+});
+
+document.querySelector('[data-accion="editar-curso"]').addEventListener('click', () => abrirCurso(cursoActivo().id));
+
+
 // ---------- Plantilla ----------
 
 function usarPlantilla() {
+  const curso = cursoActivo();
+  const delCurso = datos.modulos.filter(m => m.cursoId === curso.id);
+  // Un curso vacío con el nombre por defecto pasa a llamarse como la plantilla
+  if (delCurso.length === 0 && curso.nombre === 'Mi curso') curso.nombre = '1.º DAW';
+
   for (const p of PLANTILLA_DAW1) {
-    if (!datos.modulos.some(m => m.sigla === p.sigla)) {
-      datos.modulos.push(completarModulo(p));
+    if (!delCurso.some(m => m.sigla === p.sigla)) {
+      datos.modulos.push(completarModulo({ ...p, cursoId: curso.id }));
     }
   }
   guardar();
@@ -1115,68 +1300,112 @@ function abrirCopia() {
     : 'nunca';
   document.getElementById('ultima-copia').textContent = fecha;
   document.getElementById('error-copia').textContent = '';
+  // «Compartir» solo si el navegador puede compartir archivos (sobre todo en el móvil)
+  document.getElementById('boton-compartir-copia').hidden = !puedeCompartirArchivos();
   dialogoCopia.showModal();
 }
 
-function descargarJSON(contenido, nombreArchivo) {
-  const archivo = new Blob([JSON.stringify(contenido, null, 2)], { type: 'application/json' });
+function crearArchivo(contenido, nombreArchivo) {
+  return new File([JSON.stringify(contenido, null, 2)], nombreArchivo, { type: 'application/json' });
+}
+
+function puedeCompartirArchivos() {
+  try {
+    return Boolean(navigator.canShare) && navigator.canShare({ files: [crearArchivo({}, 'prueba.json')] });
+  } catch (e) {
+    return false;
+  }
+}
+
+function descargarArchivo(archivo) {
   const enlace = document.createElement('a');
   enlace.href = URL.createObjectURL(archivo);
-  enlace.download = nombreArchivo;
+  enlace.download = archivo.name;
   enlace.click();
   URL.revokeObjectURL(enlace.href);
 }
 
-// Solo los módulos, sin notas, para pasárselos a otra persona
-function exportarModulos() {
-  const modulosSinNotas = datos.modulos.map(({ nombre, sigla, reparto, horas, minimos }) =>
-    ({ nombre, sigla, reparto, horas, minimos }));
-  descargarJSON(
-    { app: 'Cinc', tipo: 'modulos', version: 1, exportado: new Date().toISOString(), modulos: modulosSinNotas },
-    `cinc-modulos-${new Date().toISOString().slice(0, 10)}.json`
-  );
+// Abre el menú «Compartir» del sistema (WhatsApp, AirDrop, Drive, correo…).
+// Devuelve true si se compartió; si la persona lo cancela, false.
+async function compartirArchivo(archivo, titulo) {
+  try {
+    await navigator.share({ files: [archivo], title: titulo });
+    return true;
+  } catch (e) {
+    if (e.name === 'AbortError') return false;   // cerró el menú sin elegir nada
+    descargarArchivo(archivo);                     // no se pudo compartir: se descarga
+    return true;
+  }
 }
 
-// Añade módulos compartidos: los de una sigla que ya existe se actualizan
-// (sin tocar sus notas) y los demás se añaden
+// Solo los módulos (del curso que se ve), sin notas, para pasárselos a otra persona
+async function exportarModulos() {
+  const modulosSinNotas = datos.modulos
+    .filter(m => enCiclo() || m.cursoId === cursoActivo().id)
+    .map(({ nombre, sigla, reparto, horas, minimos }) => ({ nombre, sigla, reparto, horas, minimos }));
+  const archivo = crearArchivo(
+    { app: 'Cinc', tipo: 'modulos', version: 1, exportado: new Date().toISOString(), modulos: modulosSinNotas },
+    `cinc-modulos-${hoyISO()}.json`
+  );
+  if (puedeCompartirArchivos()) await compartirArchivo(archivo, 'Módulos de Cinc');
+  else descargarArchivo(archivo);
+}
+
+// Añade módulos compartidos al curso que se ve: los de una sigla que ya existe
+// en ese curso se actualizan (sin tocar sus notas) y los demás se añaden
 function cargarModulos(lista) {
-  const nuevos = lista.filter(m => !datos.modulos.some(x => x.sigla === m.sigla)).length;
+  const curso = cursoActivo();
+  const delCurso = datos.modulos.filter(m => m.cursoId === curso.id);
+  const nuevos = lista.filter(m => !delCurso.some(x => x.sigla === m.sigla)).length;
   const actualizados = lista.length - nuevos;
-  const pregunta = `Se añadirán ${nuevos} ${nuevos === 1 ? 'módulo' : 'módulos'}` +
+  const pregunta = `Se añadirán ${nuevos} ${nuevos === 1 ? 'módulo' : 'módulos'} a ${curso.nombre}` +
     (actualizados > 0 ? ` y se actualizarán ${actualizados} que ya tienes (misma sigla)` : '') +
     '. Tus notas no se tocan. ¿Seguir?';
   if (!confirm(pregunta)) return;
 
   for (const m of lista) {
-    const existente = datos.modulos.find(x => x.sigla === m.sigla);
-    const valores = completarModulo(m);
+    const existente = delCurso.find(x => x.sigla === m.sigla);
+    const valores = completarModulo({ ...m, id: null, cursoId: curso.id });
     if (existente) {
       Object.assign(existente, { nombre: valores.nombre, reparto: valores.reparto, horas: valores.horas, minimos: valores.minimos });
     } else {
       datos.modulos.push(valores);
     }
   }
+  datos.cursoActual = curso.id;
   guardar();
   pintarTodo();
   if (dialogoCopia.open) dialogoCopia.close();
-  mostrarAviso(`Módulos cargados: ${nuevos} ${nuevos === 1 ? 'nuevo' : 'nuevos'} y ${actualizados} ${actualizados === 1 ? 'actualizado' : 'actualizados'}.`, false);
+  mostrarAviso(`Módulos cargados en ${curso.nombre}: ${nuevos} ${nuevos === 1 ? 'nuevo' : 'nuevos'} y ${actualizados} ${actualizados === 1 ? 'actualizado' : 'actualizados'}.`, false);
+}
+
+// Copia completa: cursos, módulos y notas
+function archivoCopia() {
+  return crearArchivo({
+    app: 'Cinc',
+    version: 2,
+    exportado: new Date().toISOString(),
+    cursos: datos.cursos,
+    cursoActual: datos.cursoActual,
+    modulos: datos.modulos,
+    notas: datos.notas
+  }, `cinc-copia-${hoyISO()}.json`);
+}
+
+function copiaHecha() {
+  datos.ultimaCopia = new Date().toISOString();
+  guardar();
+  document.getElementById('aviso').hidden = true;
+  document.getElementById('ultima-copia').textContent = 'hoy';
+}
+
+async function compartirCopia() {
+  if (await compartirArchivo(archivoCopia(), 'Copia de Cinc')) copiaHecha();
 }
 
 function exportar() {
-  datos.ultimaCopia = new Date().toISOString();
-  guardar();
-
-  const copia = {
-    app: 'Cinc',
-    version: 1,
-    exportado: datos.ultimaCopia,
-    modulos: datos.modulos,
-    notas: datos.notas
-  };
-  descargarJSON(copia, `cinc-copia-${datos.ultimaCopia.slice(0, 10)}.json`);
-
-  document.getElementById('aviso').hidden = true;
-  document.getElementById('ultima-copia').textContent = 'hoy';
+  descargarArchivo(archivoCopia());
+  copiaHecha();
 }
 
 async function importar(archivo) {
@@ -1192,9 +1421,12 @@ async function importar(archivo) {
       return;
     }
     if (esCopiaValida(contenido)) {
-      nuevos = completarNotas({ modulos: contenido.modulos, notas: contenido.notas, ultimaCopia: contenido.exportado || null });
+      nuevos = completarNotas({
+        cursos: contenido.cursos, cursoActual: contenido.cursoActual,
+        modulos: contenido.modulos, notas: contenido.notas, ultimaCopia: contenido.exportado || null
+      });
     } else if (Array.isArray(contenido.filas)) {
-      nuevos = desdeHoja(contenido.filas);   // copia de la antigua hoja de Google
+      nuevos = completarNotas(desdeHoja(contenido.filas));   // copia de la antigua hoja de Google
     } else {
       throw new Error('Formato desconocido');
     }
@@ -1234,6 +1466,7 @@ document.getElementById('boton-copia').addEventListener('click', abrirCopia);
 document.getElementById('boton-plantilla').addEventListener('click', usarPlantilla);
 document.getElementById('boton-primer-modulo').addEventListener('click', () => abrirModulo(null));
 document.getElementById('boton-exportar').addEventListener('click', exportar);
+document.getElementById('boton-compartir-copia').addEventListener('click', compartirCopia);
 document.getElementById('boton-compartir').addEventListener('click', exportarModulos);
 
 // Los dos botones de importar (bienvenida y diálogo) usan el mismo selector de archivo
