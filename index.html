@@ -35,7 +35,7 @@
     <!-- Primer uso: todavía no hay módulos -->
     <section id="bienvenida" class="bienvenida" hidden>
       <h2>Empieza creando tus módulos</h2>
-      <p>Cada módulo (o asignatura) agrupa sus exámenes y prácticas. Después podrás añadir las notas y Cinc calculará las medias.</p>
+      <p>Cada módulo (o asignatura) agrupa sus exámenes y actividades. Después podrás añadir las notas y Cinc calculará las medias.</p>
       <div class="bienvenida-botones">
         <button type="button" id="boton-plantilla" class="boton boton-primario">Usar la plantilla de 1.º DAW</button>
         <button type="button" id="boton-primer-modulo" class="boton">Crear un módulo</button>
@@ -76,7 +76,7 @@
           <span>Tipo</span>
           <select name="tipo">
             <option>Examen</option>
-            <option>Práctica</option>
+            <option>Actividad</option>
           </select>
         </label>
 
@@ -86,12 +86,12 @@
         </label>
 
         <label class="campo">
-          <span id="etiqueta-porcentaje">% en prácticas</span>
+          <span id="etiqueta-porcentaje">% en actividades</span>
           <input name="porcentaje" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej.: 20">
         </label>
       </div>
       <p class="ayuda"><strong>Nota:</strong> si aún no la tienes, déjala vacía y saldrá como pendiente.</p>
-      <p class="ayuda"><strong id="nombre-ayuda-porcentaje">% en prácticas:</strong><span id="ayuda-porcentaje"></span></p>
+      <p class="ayuda"><strong id="nombre-ayuda-porcentaje">% en actividades:</strong><span id="ayuda-porcentaje"></span></p>
 
       <label class="campo">
         <span>Comentario <em>(opcional)</em></span>
@@ -125,7 +125,7 @@
 
       <label class="casilla">
         <input name="tieneReparto" type="checkbox">
-        <span>Los exámenes y las prácticas tienen un peso fijo (reparto oficial)</span>
+        <span>Los exámenes y las actividades tienen un peso fijo (reparto oficial)</span>
       </label>
 
       <div id="campos-reparto" class="campos-fila" hidden>
@@ -134,11 +134,11 @@
           <input name="examenes" type="text" inputmode="decimal" autocomplete="off">
         </label>
         <label class="campo">
-          <span>% prácticas</span>
+          <span>% actividades</span>
           <input name="practicas" type="text" inputmode="decimal" autocomplete="off">
         </label>
       </div>
-      <p class="ayuda">Márcalo si el profesor ha dicho cuánto valen los exámenes y cuánto las prácticas (por ejemplo, 60 % y 40 %). Así la media del módulo respeta ese reparto aunque haya más prácticas que exámenes. Si no lo marcas, todas las actividades del módulo se juntan en una sola media.</p>
+      <p class="ayuda">Márcalo si el profesor ha dicho cuánto valen los exámenes y cuánto las actividades (por ejemplo, 60 % y 40 %). Así la media del módulo respeta ese reparto aunque haya más actividades que exámenes. Si no lo marcas, todas las actividades del módulo se juntan en una sola media.</p>
 
       <p id="error-modulo" class="error" role="alert"></p>
 
