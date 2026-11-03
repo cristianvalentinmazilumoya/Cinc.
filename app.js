@@ -326,7 +326,7 @@ function pintarResumen() {
   if (modulos.length === 0) {
     resumen.textContent = 'Tus notas, siempre a mano.';
   } else if (notas === 0) {
-    resumen.textContent = 'Aún no hay notas. Pulsa «+ Nota» para añadir la primera.';
+    resumen.textContent = 'Aún no hay notas. Pulsa «+ Añadir nota» para añadir la primera.';
   } else {
     resumen.innerHTML =
       `Media del curso <strong class="num">${formatear(media)}</strong> con ` +
@@ -451,7 +451,7 @@ function pintarDetalle() {
       <tbody>${filas || '<tr><td colspan="4" class="vacio">Aún no hay actividades en este módulo.</td></tr>'}</tbody>
     </table>
     <button type="button" class="boton boton-primario anadir-en-modulo" data-accion="nueva-nota-modulo">
-      + Añadir nota a ${escapar(m.sigla)}
+      + Añadir nota de ${escapar(m.sigla)}
     </button>`;
 }
 

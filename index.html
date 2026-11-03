@@ -27,7 +27,7 @@
       </div>
       <div class="acciones">
         <button type="button" id="boton-copia" class="boton">Copia</button>
-        <button type="button" id="boton-nueva-nota" class="boton boton-primario" hidden>+ Nota</button>
+        <button type="button" id="boton-nueva-nota" class="boton boton-primario" hidden>+ Añadir nota</button>
       </div>
     </header>
 
@@ -126,7 +126,7 @@
 
       <label class="casilla">
         <input name="tieneReparto" type="checkbox">
-        <span>Tiene un reparto oficial entre exámenes y prácticas</span>
+        <span>Los exámenes y las prácticas tienen un peso fijo (reparto oficial)</span>
       </label>
 
       <div id="campos-reparto" class="campos-fila" hidden>
@@ -139,7 +139,7 @@
           <input name="practicas" type="text" inputmode="decimal" autocomplete="off">
         </label>
       </div>
-      <p class="ayuda">Sin reparto, la media del módulo es la media de todas sus notas.</p>
+      <p class="ayuda">Márcalo si el profesor ha dicho cuánto valen los exámenes y cuánto las prácticas (por ejemplo, 60 % y 40 %). Así la media del módulo respeta ese reparto aunque haya más prácticas que exámenes. Si no lo marcas, todas las actividades del módulo se juntan en una sola media.</p>
 
       <p id="error-modulo" class="error" role="alert"></p>
 
