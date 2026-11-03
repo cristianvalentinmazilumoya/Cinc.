@@ -29,7 +29,7 @@ La primera vez que se abre esta versión, si el navegador aún tenía las notas 
 
 ## Cómo se calculan las medias
 
-- **Porcentaje de cada actividad:** al añadir una nota se puede indicar cuánto vale dentro de su grupo: dentro de los exámenes o de las prácticas si el módulo tiene reparto, o dentro de todo el módulo si no lo tiene. Las actividades sin porcentaje se reparten a partes iguales lo que falte hasta el 100 %. Si no se pone ninguno, todas valen lo mismo.
+- **Porcentaje de cada actividad:** al añadir una nota se puede indicar cuánto vale en la nota final del módulo, como lo publica el profesor. Por ejemplo, en un módulo 60 % exámenes / 40 % prácticas, tres prácticas de 10 %, 10 % y 20 %. Las actividades sin porcentaje se reparten a partes iguales lo que falte hasta el total de su grupo (el 40 % en el ejemplo, o el 100 % si el módulo no tiene reparto). Si no se pone ninguno, todas valen lo mismo.
 - **Media de exámenes / prácticas:** media ponderada (nota × porcentaje / suma de porcentajes) de las actividades que ya tienen nota.
 - **Media del módulo:** si el módulo tiene reparto oficial (por ejemplo DIW 60/40), se combinan las dos medias con esos porcentajes, usando solo los grupos que ya tienen nota. Sin reparto, es la media ponderada de todas sus notas.
 - **Media del curso:** media simple de las medias de los módulos que tienen nota.
