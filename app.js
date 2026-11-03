@@ -13,14 +13,14 @@ const CLAVE_ANTIGUA = 'notas-daw1-ultimos-datos';
 // Plantilla para 1.º de DAW. «reparto» solo en los módulos con reparto
 // oficial publicado (% de exámenes y % de actividades).
 const PLANTILLA_DAW1 = [
-  { nombre: 'Programació + Entorns de desenvolupament (0485+0487)', sigla: 'PRG', reparto: null },
-  { nombre: "Disseny d'interfícies web (0615)", sigla: 'DIW', reparto: { examenes: 60, practicas: 40 } },
-  { nombre: 'Bases de dades (0484)', sigla: 'BBDD', reparto: null },
-  { nombre: 'Llenguatges de marques (0373)', sigla: 'LMSGI', reparto: null },
-  { nombre: 'Sistemes informàtics (0483)', sigla: 'SI', reparto: { examenes: 50, practicas: 50 } },
-  { nombre: "Desplegament d'aplicacions web (0614)", sigla: 'DAW', reparto: null },
-  { nombre: 'Digitalització aplicada als sectors productius (1665)', sigla: 'DIG', reparto: { examenes: 35, practicas: 45 } },
-  { nombre: "Itinerari Personal per l'Ocupabilitat I (1709)", sigla: 'IPO', reparto: null },
+  { nombre: 'Programació + Entorns de desenvolupament', sigla: 'PRG', reparto: null },
+  { nombre: "Disseny d'interfícies web", sigla: 'DIW', reparto: { examenes: 60, practicas: 40 } },
+  { nombre: 'Bases de dades', sigla: 'BBDD', reparto: null },
+  { nombre: 'Llenguatges de marques', sigla: 'LMSGI', reparto: null },
+  { nombre: 'Sistemes informàtics', sigla: 'SI', reparto: { examenes: 50, practicas: 50 } },
+  { nombre: "Desplegament d'aplicacions web", sigla: 'DAW', reparto: null },
+  { nombre: 'Digitalització aplicada als sectors productius', sigla: 'DIG', reparto: { examenes: 35, practicas: 45 } },
+  { nombre: "Itinerari Personal per l'Ocupabilitat I", sigla: 'IPO', reparto: null },
   { nombre: 'Noves Tecnologies', sigla: 'NT', reparto: { examenes: 40, practicas: 60 } }
 ];
 
@@ -104,6 +104,12 @@ function esCopiaValida(objeto) {
   return objeto && Array.isArray(objeto.modulos) && Array.isArray(objeto.notas);
 }
 
+// «Bases de dades (0484)» → «Bases de dades». Quita el código oficial del
+// final del nombre (uno o varios de 4 cifras: «(0485+0487)»).
+function quitarCodigo(nombre) {
+  return String(nombre).replace(/\s*\(\d{4}(\s*\+\s*\d{4})*\)\s*$/, '').trim();
+}
+
 // Módulo con todos sus campos (los que falten, vacíos)
 function completarModulo(modulo) {
   return {
@@ -132,6 +138,13 @@ function completarNotas(objeto) {
   for (const m of objeto.modulos) {
     if (!objeto.cursos.some(c => c.id === m.cursoId)) m.cursoId = objeto.cursos[0].id;
   }
+  // Una sola vez: los nombres de los módulos pierden el código oficial del final.
+  // Después se respeta lo que escriba cada persona.
+  if (!objeto.nombresSinCodigo) {
+    for (const m of objeto.modulos) m.nombre = quitarCodigo(m.nombre) || m.nombre;
+    objeto.nombresSinCodigo = true;
+  }
+
   if (objeto.cursoActual !== CICLO && !objeto.cursos.some(c => c.id === objeto.cursoActual)) {
     objeto.cursoActual = objeto.cursos[0].id;
   }
@@ -208,13 +221,13 @@ function desdeHoja(filas) {
   const nuevos = { modulos: [], notas: [], ultimaCopia: null };
 
   for (const a of leerFilas(filas)) {
-    let modulo = nuevos.modulos.find(m => m.sigla === a.modulo.toUpperCase() || m.nombre === a.modulo);
+    let modulo = nuevos.modulos.find(m => m.sigla === a.modulo.toUpperCase() || m.nombre === quitarCodigo(a.modulo));
 
     if (!modulo) {
-      const plantilla = PLANTILLA_DAW1.find(p => p.sigla === a.modulo.toUpperCase() || p.nombre === a.modulo);
+      const plantilla = PLANTILLA_DAW1.find(p => p.sigla === a.modulo.toUpperCase() || p.nombre === quitarCodigo(a.modulo));
       modulo = completarModulo(plantilla
         ? plantilla
-        : { nombre: a.modulo, sigla: a.modulo.slice(0, 5).toUpperCase() });
+        : { nombre: quitarCodigo(a.modulo), sigla: a.modulo.slice(0, 5).toUpperCase() });
       nuevos.modulos.push(modulo);
     }
 
@@ -1205,6 +1218,7 @@ function archivoCopia() {
     exportado: new Date().toISOString(),
     cursos: datos.cursos,
     cursoActual: datos.cursoActual,
+    nombresSinCodigo: true,
     modulos: datos.modulos,
     notas: datos.notas
   }, `cinc-copia-${hoyISO()}.json`);
@@ -1265,7 +1279,7 @@ async function importar(archivo) {
     const problemas = problemasArchivo(contenido);
     if (problemas.length > 0) { rechazar(problemas); return; }
     nuevos = completarNotas({
-      cursos: contenido.cursos, cursoActual: contenido.cursoActual,
+      cursos: contenido.cursos, cursoActual: contenido.cursoActual, nombresSinCodigo: contenido.nombresSinCodigo,
       modulos: contenido.modulos, notas: contenido.notas, ultimaCopia: contenido.exportado || null
     });
   } else if (Array.isArray(contenido.filas)) {
