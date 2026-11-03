@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cinc</title>
-  <meta name="description" content="Cinc: mis notas de 1.º de DAW por módulo">
+  <meta name="description" content="Cinc: apunta tus notas y calcula las medias de cada módulo">
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
@@ -21,34 +21,155 @@
   <main class="pagina">
     <header class="cabecera">
       <img class="logo" src="icons/favicon.svg" alt="" width="48" height="48">
-      <div>
+      <div class="cabecera-texto">
         <h1>Cinc<span class="punto">.</span></h1>
         <p id="resumen" class="resumen">Cargando notas…</p>
+      </div>
+      <div class="acciones">
+        <button type="button" id="boton-copia" class="boton">Copia</button>
+        <button type="button" id="boton-nueva-nota" class="boton boton-primario" hidden>+ Nota</button>
       </div>
     </header>
 
     <p id="aviso" class="aviso" hidden></p>
 
-    <section aria-labelledby="titulo-modulos">
-      <h2 id="titulo-modulos" class="titulo-seccion">Módulos</h2>
-      <div id="modulos" class="rejilla">
-        <!-- Esqueleto mientras se cargan los datos -->
-        <div class="tarjeta esqueleto"></div>
-        <div class="tarjeta esqueleto"></div>
-        <div class="tarjeta esqueleto"></div>
-        <div class="tarjeta esqueleto"></div>
-        <div class="tarjeta esqueleto"></div>
-        <div class="tarjeta esqueleto"></div>
+    <!-- Primer uso: todavía no hay módulos -->
+    <section id="bienvenida" class="bienvenida" hidden>
+      <h2>Empieza creando tus módulos</h2>
+      <p>Cada módulo (o asignatura) agrupa sus exámenes y prácticas. Después podrás añadir las notas y Cinc calculará las medias.</p>
+      <div class="bienvenida-botones">
+        <button type="button" id="boton-plantilla" class="boton boton-primario">Usar la plantilla de 1.º DAW</button>
+        <button type="button" id="boton-primer-modulo" class="boton">Crear un módulo</button>
+        <button type="button" class="boton boton-enlace" data-accion="importar">Tengo una copia de seguridad</button>
       </div>
     </section>
 
-    <section id="detalle" class="detalle" aria-live="polite"></section>
+    <section id="seccion-modulos" aria-labelledby="titulo-modulos">
+      <h2 id="titulo-modulos" class="titulo-seccion">Módulos</h2>
+      <div id="modulos" class="rejilla"></div>
+    </section>
+
+    <section id="detalle" class="detalle" aria-live="polite" hidden></section>
 
     <footer class="pie">
-      Las notas vienen en directo de tu hoja <strong>Cinc - DAW 1</strong>.
-      Para añadir o cambiar una nota, escríbela en la hoja y vuelve a abrir esta página.
+      Tus notas se guardan solo en este dispositivo. Haz una copia de seguridad de vez en cuando
+      desde el botón <strong>Copia</strong>.
     </footer>
   </main>
+
+  <!-- Formulario: nueva nota / editar nota -->
+  <dialog id="dialogo-nota" class="dialogo" aria-labelledby="titulo-nota">
+    <form id="form-nota" novalidate>
+      <h2 id="titulo-nota">Nueva nota</h2>
+
+      <label class="campo">
+        <span>Módulo</span>
+        <select name="modulo"></select>
+      </label>
+
+      <label class="campo">
+        <span>Actividad</span>
+        <input name="actividad" type="text" autocomplete="off" placeholder="Ej.: Prova 1, Pt1a, Lliurament 2…">
+      </label>
+
+      <div class="campos-fila">
+        <label class="campo">
+          <span>Tipo</span>
+          <select name="tipo">
+            <option>Examen</option>
+            <option>Práctica</option>
+          </select>
+        </label>
+
+        <label class="campo">
+          <span>Nota</span>
+          <input name="nota" type="text" inputmode="decimal" autocomplete="off" placeholder="0 a 10">
+        </label>
+
+        <label class="campo campo-corto">
+          <span>Peso</span>
+          <input name="peso" type="text" inputmode="decimal" autocomplete="off">
+        </label>
+      </div>
+      <p class="ayuda">Si aún no tienes la nota, déjala vacía y saldrá como pendiente. El peso es 1 salvo que la actividad cuente más.</p>
+
+      <label class="campo">
+        <span>Comentario <em>(opcional)</em></span>
+        <input name="comentario" type="text" autocomplete="off">
+      </label>
+
+      <p id="error-nota" class="error" role="alert"></p>
+
+      <div class="dialogo-botones">
+        <button type="button" id="borrar-nota" class="boton boton-peligro">Borrar</button>
+        <button type="button" class="boton" data-cerrar>Cancelar</button>
+        <button type="submit" class="boton boton-primario">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Formulario: nuevo módulo / editar módulo -->
+  <dialog id="dialogo-modulo" class="dialogo" aria-labelledby="titulo-modulo">
+    <form id="form-modulo" novalidate>
+      <h2 id="titulo-modulo">Nuevo módulo</h2>
+
+      <label class="campo">
+        <span>Nombre</span>
+        <input name="nombre" type="text" autocomplete="off" placeholder="Ej.: Bases de dades (0484)">
+      </label>
+
+      <label class="campo campo-corto">
+        <span>Sigla</span>
+        <input name="sigla" type="text" autocomplete="off" maxlength="6" placeholder="BBDD">
+      </label>
+
+      <label class="casilla">
+        <input name="tieneReparto" type="checkbox">
+        <span>Tiene un reparto oficial entre exámenes y prácticas</span>
+      </label>
+
+      <div id="campos-reparto" class="campos-fila" hidden>
+        <label class="campo">
+          <span>% exámenes</span>
+          <input name="examenes" type="text" inputmode="decimal" autocomplete="off">
+        </label>
+        <label class="campo">
+          <span>% prácticas</span>
+          <input name="practicas" type="text" inputmode="decimal" autocomplete="off">
+        </label>
+      </div>
+      <p class="ayuda">Sin reparto, la media del módulo es la media de todas sus notas.</p>
+
+      <p id="error-modulo" class="error" role="alert"></p>
+
+      <div class="dialogo-botones">
+        <button type="button" id="borrar-modulo" class="boton boton-peligro">Borrar</button>
+        <button type="button" class="boton" data-cerrar>Cancelar</button>
+        <button type="submit" class="boton boton-primario">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Copia de seguridad -->
+  <dialog id="dialogo-copia" class="dialogo" aria-labelledby="titulo-copia">
+    <h2 id="titulo-copia">Copia de seguridad</h2>
+    <p>Tus notas se guardan solo en este dispositivo. Descarga una copia para no perderlas o para pasarlas a otro dispositivo.</p>
+    <p class="ayuda">Última copia: <strong id="ultima-copia">nunca</strong></p>
+
+    <div class="copia-botones">
+      <button type="button" id="boton-exportar" class="boton boton-primario">Descargar copia</button>
+      <button type="button" class="boton" data-accion="importar">Cargar una copia…</button>
+    </div>
+    <p class="ayuda">Cargar una copia sustituye los módulos y notas de este dispositivo.</p>
+
+    <p id="error-copia" class="error" role="alert"></p>
+
+    <div class="dialogo-botones">
+      <button type="button" class="boton" data-cerrar>Cerrar</button>
+    </div>
+  </dialog>
+
+  <input type="file" id="archivo-copia" accept=".json,application/json" hidden>
 
   <script src="app.js"></script>
 </body>

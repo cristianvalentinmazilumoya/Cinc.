@@ -1,7 +1,7 @@
 {
   "name": "Cinc",
   "short_name": "Cinc",
-  "description": "Cinc: mis notas de 1.º de DAW por módulo",
+  "description": "Apunta tus notas y calcula las medias de cada módulo",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

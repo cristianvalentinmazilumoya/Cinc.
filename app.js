@@ -1,41 +1,45 @@
 // ============================================================
-//  Cinc — lee la hoja de Google y calcula las medias
+//  Cinc — guarda las notas en el dispositivo y calcula las medias
 // ============================================================
 
-// URL de la aplicación web de Apps Script (README, paso 1).
-// Mientras esté vacía, la página usa datos-ejemplo.json.
-const URL_DATOS = 'https://script.google.com/macros/s/AKfycbynBFvVfn25FAaIypWiBWSgNMhEYr1FovhneC1P9FDVrhjEMd2vev-Bgskp_mMBgOmOrg/exec';
+// Dónde se guardan los datos (localStorage del navegador)
+const CLAVE = 'cinc-datos';
+// Copia de la hoja de Google que guardaba la versión anterior de la app
+const CLAVE_ANTIGUA = 'notas-daw1-ultimos-datos';
 
-// Módulos en el orden de la hoja. «reparto» solo en los que tienen
-// reparto oficial publicado (pesos de exámenes y prácticas).
-const MODULOS = [
-  { nombre: 'Programació + Entorns de desenvolupament (0485+0487)', sigla: 'PRG' },
-  { nombre: "Disseny d'interfícies web (0615)", sigla: 'DIW',
-    reparto: { examenes: 60, practicas: 40, texto: '60 % pruebas / 40 % prácticas' } },
-  { nombre: 'Bases de dades (0484)', sigla: 'BBDD' },
-  { nombre: 'Llenguatges de marques (0373)', sigla: 'LMSGI' },
-  { nombre: 'Sistemes informàtics (0483)', sigla: 'SI',
-    reparto: { examenes: 50, practicas: 50, texto: '50 % pruebas / 50 % prácticas' } },
-  { nombre: "Desplegament d'aplicacions web (0614)", sigla: 'DAW' },
-  { nombre: 'Digitalització aplicada als sectors productius (1665)', sigla: 'DIG',
-    reparto: { examenes: 35, practicas: 45, texto: '35 % prueba teórica / 45 % actividades (20 % proyecto final, aún no cuenta)' } },
-  { nombre: "Itinerari Personal per l'Ocupabilitat I (1709)", sigla: 'IPO' },
-  { nombre: 'Noves Tecnologies', sigla: 'NT',
-    reparto: { examenes: 40, practicas: 60, texto: '40 % pruebas / 60 % proyecto' } }
+// Plantilla para 1.º de DAW. «reparto» solo en los módulos con reparto
+// oficial publicado (% de exámenes y % de prácticas).
+const PLANTILLA_DAW1 = [
+  { nombre: 'Programació + Entorns de desenvolupament (0485+0487)', sigla: 'PRG', reparto: null },
+  { nombre: "Disseny d'interfícies web (0615)", sigla: 'DIW', reparto: { examenes: 60, practicas: 40 } },
+  { nombre: 'Bases de dades (0484)', sigla: 'BBDD', reparto: null },
+  { nombre: 'Llenguatges de marques (0373)', sigla: 'LMSGI', reparto: null },
+  { nombre: 'Sistemes informàtics (0483)', sigla: 'SI', reparto: { examenes: 50, practicas: 50 } },
+  { nombre: "Desplegament d'aplicacions web (0614)", sigla: 'DAW', reparto: null },
+  { nombre: 'Digitalització aplicada als sectors productius (1665)', sigla: 'DIG', reparto: { examenes: 35, practicas: 45 } },
+  { nombre: "Itinerari Personal per l'Ocupabilitat I (1709)", sigla: 'IPO', reparto: null },
+  { nombre: 'Noves Tecnologies', sigla: 'NT', reparto: { examenes: 40, practicas: 60 } }
 ];
-
-const CLAVE_GUARDADO = 'notas-daw1-ultimos-datos';
 
 const formato = new Intl.NumberFormat('es-ES', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2
 });
 
-let modulos = [];          // módulos con sus actividades y medias
-let siglaSeleccionada = 'PRG';
+// datos = { modulos: [{ id, nombre, sigla, reparto }],
+//           notas: [{ id, moduloId, actividad, tipo, nota, peso, comentario }],
+//           ultimaCopia: fecha ISO o null }
+let datos = { modulos: [], notas: [], ultimaCopia: null };
+let modulos = [];            // módulos con sus actividades y medias (se calcula)
+let idSeleccionado = null;   // módulo que se ve en el detalle
+let idEditando = null;       // nota o módulo abierto en un formulario (null = nuevo)
 
 
-// ---------- Conversión de datos ----------
+// ---------- Utilidades ----------
+
+function nuevoId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
 
 // "9,00" → 9 · "1.234,5" → 1234.5 · "" → null
 function aNumero(valor) {
@@ -55,8 +59,56 @@ function normalizar(texto) {
     .normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-// Convierte las filas de la hoja en objetos. Las columnas se buscan por el
-// nombre de su cabecera, así da igual en qué orden estén en la hoja.
+// Evita que un texto escrito por el usuario se interprete como HTML
+function escapar(texto) {
+  return String(texto)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
+
+// ---------- Guardar y cargar ----------
+
+function guardar() {
+  try {
+    localStorage.setItem(CLAVE, JSON.stringify(datos));
+  } catch (e) {
+    mostrarAviso('No se han podido guardar los cambios en este dispositivo.', true);
+  }
+  // Pide al navegador que no borre los datos aunque necesite espacio
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist();
+  }
+}
+
+function esCopiaValida(objeto) {
+  return objeto && Array.isArray(objeto.modulos) && Array.isArray(objeto.notas);
+}
+
+function cargarDatos() {
+  try {
+    const guardados = JSON.parse(localStorage.getItem(CLAVE));
+    if (esCopiaValida(guardados)) return { datos: guardados, migrado: false };
+  } catch (e) { /* nada guardado */ }
+
+  // Primera vez con esta versión: si quedan las notas de la hoja de Google, se pasan
+  try {
+    const antiguos = JSON.parse(localStorage.getItem(CLAVE_ANTIGUA));
+    if (antiguos && Array.isArray(antiguos.filas)) {
+      return { datos: desdeHoja(antiguos.filas), migrado: true };
+    }
+  } catch (e) { /* no había hoja */ }
+
+  return { datos: { modulos: [], notas: [], ultimaCopia: null }, migrado: false };
+}
+
+
+// ---------- Importar desde la hoja de Google antigua ----------
+
+// Convierte las filas de la hoja en actividades. Las columnas se buscan por
+// el nombre de su cabecera, así da igual en qué orden estén.
 function leerFilas(filas) {
   const filaCabecera = filas.findIndex(f => f.some(c => normalizar(c) === 'modulo'));
   if (filaCabecera === -1) throw new Error('No encuentro la cabecera «Módulo»');
@@ -68,7 +120,7 @@ function leerFilas(filas) {
     tipo: columna('tipo'),
     actividad: columna('actividad'),
     nota: columna('nota'),
-    peso: columna('peso'),          // opcional: si no está, cada nota pesa 1
+    peso: columna('peso'),
     comentario: columna('comentario')
   };
   const celda = (fila, i) => (i === -1 ? '' : String(fila[i] ?? '').trim());
@@ -82,7 +134,7 @@ function leerFilas(filas) {
 
     actividades.push({
       modulo: modulo,
-      tipo: celda(fila, col.tipo),
+      tipo: celda(fila, col.tipo) === 'Examen' ? 'Examen' : 'Práctica',
       actividad: celda(fila, col.actividad),
       nota: aNumero(celda(fila, col.nota)),
       peso: aNumero(celda(fila, col.peso)) ?? 1,
@@ -91,6 +143,36 @@ function leerFilas(filas) {
   }
 
   return actividades;
+}
+
+// Filas de la hoja → { modulos, notas }. Los módulos de la plantilla de DAW
+// se reconocen por la sigla o el nombre y conservan su reparto.
+function desdeHoja(filas) {
+  const nuevos = { modulos: [], notas: [], ultimaCopia: null };
+
+  for (const a of leerFilas(filas)) {
+    let modulo = nuevos.modulos.find(m => m.sigla === a.modulo.toUpperCase() || m.nombre === a.modulo);
+
+    if (!modulo) {
+      const plantilla = PLANTILLA_DAW1.find(p => p.sigla === a.modulo.toUpperCase() || p.nombre === a.modulo);
+      modulo = plantilla
+        ? { ...plantilla, id: nuevoId() }
+        : { id: nuevoId(), nombre: a.modulo, sigla: a.modulo.slice(0, 5).toUpperCase(), reparto: null };
+      nuevos.modulos.push(modulo);
+    }
+
+    nuevos.notas.push({
+      id: nuevoId(),
+      moduloId: modulo.id,
+      actividad: a.actividad,
+      tipo: a.tipo,
+      nota: a.nota,
+      peso: a.peso,
+      comentario: a.comentario
+    });
+  }
+
+  return nuevos;
 }
 
 
@@ -136,23 +218,13 @@ function calcularModulo(modulo) {
   }
 }
 
-// Agrupa las actividades por módulo, respetando el orden de MODULOS.
-function agruparPorModulo(actividades) {
-  const lista = MODULOS.map(m => ({ ...m, actividades: [] }));
-
-  for (const a of actividades) {
-    // En la hoja el módulo puede estar escrito con la sigla (PRG) o con el nombre completo
-    let modulo = lista.find(m => m.sigla === a.modulo.toUpperCase() || m.nombre === a.modulo);
-    if (!modulo) {
-      // Un módulo que no está en la lista: se añade al final
-      modulo = { nombre: a.modulo, sigla: a.modulo.slice(0, 4).toUpperCase(), actividades: [] };
-      lista.push(modulo);
-    }
-    modulo.actividades.push(a);
-  }
-
-  lista.forEach(calcularModulo);
-  return lista;
+// Junta cada módulo con sus notas y calcula las medias
+function calcularTodo() {
+  modulos = datos.modulos.map(m => ({
+    ...m,
+    actividades: datos.notas.filter(n => n.moduloId === m.id)
+  }));
+  modulos.forEach(calcularModulo);
 }
 
 function mediaDelCurso(lista) {
@@ -184,17 +256,16 @@ function formatear(nota) {
   return nota === null ? '—' : formato.format(nota);
 }
 
+function textoReparto(reparto) {
+  if (!reparto) return 'No publicado: media simple';
+  let texto = `${reparto.examenes} % exámenes / ${reparto.practicas} % prácticas`;
+  const resto = 100 - reparto.examenes - reparto.practicas;
+  if (resto > 0) texto += ` (el ${resto} % restante aún no cuenta)`;
+  return texto;
+}
+
 
 // ---------- Pintar la página ----------
-
-// Evita que un texto de la hoja se interprete como HTML
-function escapar(texto) {
-  return String(texto)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
-}
 
 function barra(nota) {
   const ancho = nota === null ? 0 : Math.min(Math.max(nota, 0), 10) * 10;
@@ -204,15 +275,22 @@ function barra(nota) {
 }
 
 function pintarResumen() {
+  const resumen = document.getElementById('resumen');
   const media = mediaDelCurso(modulos);
   const notas = modulos.reduce((total, m) => total + m.numNotas, 0);
   const conNota = modulos.filter(m => m.media !== null).length;
 
-  document.getElementById('resumen').innerHTML =
-    `Media del curso <strong class="num">${formatear(media)}</strong> con ` +
-    `<strong class="num">${notas}</strong> notas puestas en ` +
-    `<strong class="num">${conNota}</strong> módulos. ` +
-    `Toca un módulo para ver todas sus actividades.`;
+  if (modulos.length === 0) {
+    resumen.textContent = 'Tus notas, siempre a mano.';
+  } else if (notas === 0) {
+    resumen.textContent = 'Aún no hay notas. Pulsa «+ Nota» para añadir la primera.';
+  } else {
+    resumen.innerHTML =
+      `Media del curso <strong class="num">${formatear(media)}</strong> con ` +
+      `<strong class="num">${notas}</strong> ${notas === 1 ? 'nota puesta' : 'notas puestas'} en ` +
+      `<strong class="num">${conNota}</strong> ${conNota === 1 ? 'módulo' : 'módulos'}. ` +
+      `Toca un módulo para ver todas sus actividades.`;
+  }
 }
 
 function pintarTarjetas() {
@@ -223,8 +301,9 @@ function pintarTarjetas() {
     const boton = document.createElement('button');
     boton.type = 'button';
     boton.className = 'tarjeta';
-    if (m.sigla === siglaSeleccionada) boton.classList.add('seleccionada');
-    boton.setAttribute('aria-pressed', m.sigla === siglaSeleccionada);
+    boton.dataset.id = m.id;
+    if (m.id === idSeleccionado) boton.classList.add('seleccionada');
+    boton.setAttribute('aria-pressed', m.id === idSeleccionado);
 
     const media = m.media === null
       ? '<div class="media-grande sin-nota color-sin">Sin nota</div>'
@@ -239,22 +318,31 @@ function pintarTarjetas() {
       ${media}
       ${barra(m.media)}`;
 
-    boton.addEventListener('click', () => {
-      siglaSeleccionada = m.sigla;
-      pintarTarjetas();
-      pintarDetalle();
-    });
-
     contenedor.appendChild(boton);
   }
+
+  // Tarjeta para crear un módulo nuevo
+  const nueva = document.createElement('button');
+  nueva.type = 'button';
+  nueva.className = 'tarjeta tarjeta-nueva';
+  nueva.dataset.accion = 'nuevo-modulo';
+  nueva.innerHTML = '<span class="mas" aria-hidden="true">+</span> Módulo';
+  contenedor.appendChild(nueva);
 }
 
 function pintarDetalle() {
-  const m = modulos.find(x => x.sigla === siglaSeleccionada) || modulos[0];
-  const reparto = m.reparto ? m.reparto.texto : 'No publicado: media simple';
+  const detalle = document.getElementById('detalle');
+  const m = modulos.find(x => x.id === idSeleccionado);
+
+  if (!m) {
+    detalle.hidden = true;
+    return;
+  }
+  detalle.hidden = false;
 
   const filas = m.actividades.map(a => `
-    <tr class="${a.nota === null ? 'pendiente' : ''}">
+    <tr class="fila-nota ${a.nota === null ? 'pendiente' : ''}" data-id="${a.id}" tabindex="0"
+        title="Editar esta nota">
       <td>${escapar(a.actividad)}</td>
       <td class="${a.tipo === 'Examen' ? 'examen' : ''}">${escapar(a.tipo)}</td>
       <td>
@@ -266,8 +354,11 @@ function pintarDetalle() {
       <td class="col-comentario comentario">${escapar(a.comentario || (a.nota === null ? 'Pendiente' : ''))}</td>
     </tr>`).join('');
 
-  document.getElementById('detalle').innerHTML = `
-    <h2>${escapar(m.nombre)}</h2>
+  detalle.innerHTML = `
+    <div class="detalle-cabecera">
+      <h2>${escapar(m.nombre)}</h2>
+      <button type="button" class="boton" data-accion="editar-modulo">Editar módulo</button>
+    </div>
     <dl class="datos">
       <div class="dato">
         <dt>Media del módulo</dt>
@@ -283,7 +374,7 @@ function pintarDetalle() {
       </div>
       <div class="dato">
         <dt>Reparto oficial</dt>
-        <dd class="texto">${escapar(reparto)}</dd>
+        <dd class="texto">${escapar(textoReparto(m.reparto))}</dd>
       </div>
     </dl>
     <table class="tabla">
@@ -295,8 +386,11 @@ function pintarDetalle() {
           <th class="col-comentario">Estado / comentario</th>
         </tr>
       </thead>
-      <tbody>${filas || '<tr><td colspan="4">Sin actividades.</td></tr>'}</tbody>
-    </table>`;
+      <tbody>${filas || '<tr><td colspan="4" class="vacio">Aún no hay actividades en este módulo.</td></tr>'}</tbody>
+    </table>
+    <button type="button" class="boton boton-primario anadir-en-modulo" data-accion="nueva-nota-modulo">
+      + Añadir nota a ${escapar(m.sigla)}
+    </button>`;
 }
 
 function mostrarAviso(texto, esError) {
@@ -306,58 +400,356 @@ function mostrarAviso(texto, esError) {
   aviso.hidden = false;
 }
 
-function pintarTodo(datos) {
-  modulos = agruparPorModulo(leerFilas(datos.filas));
+// Vuelve a calcular y pintar todo después de cualquier cambio
+function pintarTodo() {
+  calcularTodo();
+
+  if (!modulos.some(m => m.id === idSeleccionado)) {
+    idSeleccionado = modulos.length > 0 ? modulos[0].id : null;
+  }
+
+  const hayModulos = modulos.length > 0;
+  document.getElementById('bienvenida').hidden = hayModulos;
+  document.getElementById('seccion-modulos').hidden = !hayModulos;
+  document.getElementById('boton-nueva-nota').hidden = !hayModulos;
+
   pintarResumen();
   pintarTarjetas();
   pintarDetalle();
 }
 
 
-// ---------- Carga de datos ----------
+// ---------- Formulario de notas ----------
 
-async function cargar() {
-  const url = URL_DATOS || 'datos-ejemplo.json';
+const dialogoNota = document.getElementById('dialogo-nota');
+const formNota = document.getElementById('form-nota');
+
+function abrirNota(idNota, idModulo) {
+  if (modulos.length === 0) return;
+  idEditando = idNota;
+  const nota = datos.notas.find(n => n.id === idNota);
+
+  // Lista de módulos del desplegable
+  formNota.modulo.innerHTML = datos.modulos
+    .map(m => `<option value="${m.id}">${escapar(m.sigla)} · ${escapar(m.nombre)}</option>`)
+    .join('');
+
+  document.getElementById('titulo-nota').textContent = nota ? 'Editar nota' : 'Nueva nota';
+  formNota.modulo.value = nota ? nota.moduloId : (idModulo || idSeleccionado);
+  formNota.actividad.value = nota ? nota.actividad : '';
+  formNota.tipo.value = nota ? nota.tipo : 'Práctica';
+  formNota.nota.value = nota && nota.nota !== null ? String(nota.nota).replace('.', ',') : '';
+  formNota.peso.value = nota ? String(nota.peso).replace('.', ',') : '1';
+  formNota.comentario.value = nota ? nota.comentario : '';
+  document.getElementById('borrar-nota').hidden = !nota;
+  document.getElementById('error-nota').textContent = '';
+
+  dialogoNota.showModal();
+  formNota.actividad.focus();
+}
+
+formNota.addEventListener('submit', evento => {
+  evento.preventDefault();
+  const error = document.getElementById('error-nota');
+
+  const actividad = formNota.actividad.value.trim();
+  const textoNota = formNota.nota.value.trim();
+  const nota = aNumero(textoNota);
+  const peso = aNumero(formNota.peso.value) ?? 1;
+
+  if (actividad === '') {
+    error.textContent = 'Escribe el nombre de la actividad.';
+    return;
+  }
+  if (textoNota !== '' && (nota === null || nota < 0 || nota > 10)) {
+    error.textContent = 'La nota tiene que ser un número de 0 a 10 (o déjala vacía).';
+    return;
+  }
+  if (peso <= 0) {
+    error.textContent = 'El peso tiene que ser mayor que 0.';
+    return;
+  }
+
+  const valores = {
+    moduloId: formNota.modulo.value,
+    actividad: actividad,
+    tipo: formNota.tipo.value,
+    nota: nota,
+    peso: peso,
+    comentario: formNota.comentario.value.trim()
+  };
+
+  if (idEditando) {
+    Object.assign(datos.notas.find(n => n.id === idEditando), valores);
+  } else {
+    datos.notas.push({ id: nuevoId(), ...valores });
+  }
+
+  idSeleccionado = valores.moduloId;
+  guardar();
+  pintarTodo();
+  dialogoNota.close();
+  recordarCopia();
+});
+
+document.getElementById('borrar-nota').addEventListener('click', () => {
+  const nota = datos.notas.find(n => n.id === idEditando);
+  if (!confirm(`¿Borrar «${nota.actividad}»?`)) return;
+
+  datos.notas = datos.notas.filter(n => n.id !== idEditando);
+  guardar();
+  pintarTodo();
+  dialogoNota.close();
+});
+
+
+// ---------- Formulario de módulos ----------
+
+const dialogoModulo = document.getElementById('dialogo-modulo');
+const formModulo = document.getElementById('form-modulo');
+
+function mostrarCamposReparto() {
+  document.getElementById('campos-reparto').hidden = !formModulo.tieneReparto.checked;
+}
+
+function abrirModulo(idModulo) {
+  idEditando = idModulo;
+  const modulo = datos.modulos.find(m => m.id === idModulo);
+
+  document.getElementById('titulo-modulo').textContent = modulo ? 'Editar módulo' : 'Nuevo módulo';
+  formModulo.nombre.value = modulo ? modulo.nombre : '';
+  formModulo.sigla.value = modulo ? modulo.sigla : '';
+  formModulo.tieneReparto.checked = Boolean(modulo && modulo.reparto);
+  formModulo.examenes.value = modulo && modulo.reparto ? modulo.reparto.examenes : 50;
+  formModulo.practicas.value = modulo && modulo.reparto ? modulo.reparto.practicas : 50;
+  mostrarCamposReparto();
+  document.getElementById('borrar-modulo').hidden = !modulo;
+  document.getElementById('error-modulo').textContent = '';
+
+  dialogoModulo.showModal();
+  formModulo.nombre.focus();
+}
+
+formModulo.tieneReparto.addEventListener('change', mostrarCamposReparto);
+
+// La sigla siempre en mayúsculas
+formModulo.sigla.addEventListener('input', () => {
+  formModulo.sigla.value = formModulo.sigla.value.toUpperCase();
+});
+
+formModulo.addEventListener('submit', evento => {
+  evento.preventDefault();
+  const error = document.getElementById('error-modulo');
+
+  const nombre = formModulo.nombre.value.trim();
+  const sigla = formModulo.sigla.value.trim().toUpperCase();
+  let reparto = null;
+
+  if (nombre === '' || sigla === '') {
+    error.textContent = 'Escribe el nombre y la sigla del módulo.';
+    return;
+  }
+  if (datos.modulos.some(m => m.sigla === sigla && m.id !== idEditando)) {
+    error.textContent = `Ya tienes un módulo con la sigla ${sigla}.`;
+    return;
+  }
+  if (formModulo.tieneReparto.checked) {
+    const examenes = aNumero(formModulo.examenes.value);
+    const practicas = aNumero(formModulo.practicas.value);
+    if (examenes === null || practicas === null || examenes < 0 || practicas < 0 ||
+        examenes + practicas > 100 || examenes + practicas === 0) {
+      error.textContent = 'Los porcentajes tienen que sumar entre 1 y 100.';
+      return;
+    }
+    reparto = { examenes: examenes, practicas: practicas };
+  }
+
+  if (idEditando) {
+    Object.assign(datos.modulos.find(m => m.id === idEditando), { nombre, sigla, reparto });
+  } else {
+    const nuevo = { id: nuevoId(), nombre, sigla, reparto };
+    datos.modulos.push(nuevo);
+    idSeleccionado = nuevo.id;
+  }
+
+  guardar();
+  pintarTodo();
+  dialogoModulo.close();
+});
+
+document.getElementById('borrar-modulo').addEventListener('click', () => {
+  const modulo = datos.modulos.find(m => m.id === idEditando);
+  const cuantas = datos.notas.filter(n => n.moduloId === idEditando).length;
+  const aviso = cuantas > 0
+    ? `¿Borrar ${modulo.sigla}? También se borrarán sus ${cuantas} actividades.`
+    : `¿Borrar ${modulo.sigla}?`;
+  if (!confirm(aviso)) return;
+
+  datos.modulos = datos.modulos.filter(m => m.id !== idEditando);
+  datos.notas = datos.notas.filter(n => n.moduloId !== idEditando);
+  guardar();
+  pintarTodo();
+  dialogoModulo.close();
+});
+
+
+// ---------- Plantilla ----------
+
+function usarPlantilla() {
+  for (const p of PLANTILLA_DAW1) {
+    if (!datos.modulos.some(m => m.sigla === p.sigla)) {
+      datos.modulos.push({ ...p, id: nuevoId() });
+    }
+  }
+  guardar();
+  pintarTodo();
+}
+
+
+// ---------- Copia de seguridad ----------
+
+const dialogoCopia = document.getElementById('dialogo-copia');
+
+function abrirCopia() {
+  const fecha = datos.ultimaCopia
+    ? new Date(datos.ultimaCopia).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })
+    : 'nunca';
+  document.getElementById('ultima-copia').textContent = fecha;
+  document.getElementById('error-copia').textContent = '';
+  dialogoCopia.showModal();
+}
+
+function exportar() {
+  datos.ultimaCopia = new Date().toISOString();
+  guardar();
+
+  const copia = {
+    app: 'Cinc',
+    version: 1,
+    exportado: datos.ultimaCopia,
+    modulos: datos.modulos,
+    notas: datos.notas
+  };
+  const archivo = new Blob([JSON.stringify(copia, null, 2)], { type: 'application/json' });
+  const enlace = document.createElement('a');
+  enlace.href = URL.createObjectURL(archivo);
+  enlace.download = `cinc-copia-${datos.ultimaCopia.slice(0, 10)}.json`;
+  enlace.click();
+  URL.revokeObjectURL(enlace.href);
+
+  document.getElementById('aviso').hidden = true;
+  document.getElementById('ultima-copia').textContent = 'hoy';
+}
+
+async function importar(archivo) {
+  const error = document.getElementById('error-copia');
+  let nuevos;
 
   try {
-    // cache: 'no-store' para tener siempre la última versión de la hoja
-    const respuesta = await fetch(url, { cache: 'no-store' });
-    if (!respuesta.ok) throw new Error('Respuesta ' + respuesta.status);
-
-    const datos = await respuesta.json();
-    if (!Array.isArray(datos.filas)) throw new Error('Formato inesperado');
-
-    pintarTodo(datos);
-    if (!URL_DATOS) {
-      mostrarAviso('Estás viendo datos de ejemplo: falta poner la URL del Apps Script en app.js.', false);
-    }
-
-    // Copia para poder ver las notas sin conexión
-    try {
-      localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(datos));
-    } catch (e) { /* sin almacenamiento: no pasa nada */ }
-
-  } catch (error) {
-    console.error(error);
-
-    let guardados = null;
-    try {
-      guardados = JSON.parse(localStorage.getItem(CLAVE_GUARDADO));
-    } catch (e) { /* nada guardado */ }
-
-    if (guardados && Array.isArray(guardados.filas)) {
-      pintarTodo(guardados);
-      const fecha = new Date(guardados.actualizado).toLocaleString('es-ES');
-      mostrarAviso(`No se ha podido leer la hoja. Muestro las notas guardadas el ${fecha}.`, true);
+    const contenido = JSON.parse(await archivo.text());
+    if (esCopiaValida(contenido)) {
+      nuevos = { modulos: contenido.modulos, notas: contenido.notas, ultimaCopia: contenido.exportado || null };
+    } else if (Array.isArray(contenido.filas)) {
+      nuevos = desdeHoja(contenido.filas);   // copia de la antigua hoja de Google
     } else {
-      document.getElementById('modulos').innerHTML = '';
-      document.getElementById('resumen').textContent = 'No hay datos.';
-      mostrarAviso('No se ha podido leer la hoja Cinc - DAW 1. Comprueba la conexión y vuelve a abrir la página.', true);
+      throw new Error('Formato desconocido');
     }
+  } catch (e) {
+    if (!dialogoCopia.open) abrirCopia();   // si se importó desde la bienvenida
+    error.textContent = 'Ese archivo no es una copia de Cinc.';
+    return;
+  }
+
+  const hayDatos = datos.modulos.length > 0;
+  if (hayDatos && !confirm('Esto sustituye todos los módulos y notas de este dispositivo por los de la copia. ¿Seguir?')) {
+    return;
+  }
+
+  datos = nuevos;
+  idSeleccionado = null;
+  guardar();
+  pintarTodo();
+  if (dialogoCopia.open) dialogoCopia.close();
+  mostrarAviso(`Copia cargada: ${datos.modulos.length} módulos y ${datos.notas.length} actividades.`, false);
+}
+
+// Aviso si hay bastantes notas y hace más de un mes (o nunca) que no se hace copia
+function recordarCopia() {
+  const unMes = 30 * 24 * 60 * 60 * 1000;
+  const sinCopiaReciente = !datos.ultimaCopia || Date.now() - new Date(datos.ultimaCopia) > unMes;
+  if (datos.notas.length >= 5 && sinCopiaReciente) {
+    mostrarAviso('Tus notas solo están en este dispositivo. Haz una copia de seguridad de vez en cuando (botón «Copia»).', false);
   }
 }
 
-cargar();
+
+// ---------- Eventos ----------
+
+document.getElementById('boton-nueva-nota').addEventListener('click', () => abrirNota(null));
+document.getElementById('boton-copia').addEventListener('click', abrirCopia);
+document.getElementById('boton-plantilla').addEventListener('click', usarPlantilla);
+document.getElementById('boton-primer-modulo').addEventListener('click', () => abrirModulo(null));
+document.getElementById('boton-exportar').addEventListener('click', exportar);
+
+// Los dos botones de importar (bienvenida y diálogo) usan el mismo selector de archivo
+const entradaArchivo = document.getElementById('archivo-copia');
+document.querySelectorAll('[data-accion="importar"]').forEach(boton => {
+  boton.addEventListener('click', () => entradaArchivo.click());
+});
+entradaArchivo.addEventListener('change', () => {
+  if (entradaArchivo.files.length > 0) importar(entradaArchivo.files[0]);
+  entradaArchivo.value = '';   // para poder elegir el mismo archivo otra vez
+});
+
+// Tarjetas: seleccionar un módulo o crear uno nuevo
+document.getElementById('modulos').addEventListener('click', evento => {
+  const tarjeta = evento.target.closest('.tarjeta');
+  if (!tarjeta) return;
+
+  if (tarjeta.dataset.accion === 'nuevo-modulo') {
+    abrirModulo(null);
+  } else {
+    idSeleccionado = tarjeta.dataset.id;
+    pintarTarjetas();
+    pintarDetalle();
+  }
+});
+
+// Detalle: editar el módulo, añadir una nota o editar una fila
+const detalle = document.getElementById('detalle');
+
+detalle.addEventListener('click', evento => {
+  const boton = evento.target.closest('[data-accion]');
+  const fila = evento.target.closest('.fila-nota');
+
+  if (boton && boton.dataset.accion === 'editar-modulo') abrirModulo(idSeleccionado);
+  else if (boton && boton.dataset.accion === 'nueva-nota-modulo') abrirNota(null, idSeleccionado);
+  else if (fila) abrirNota(fila.dataset.id);
+});
+
+detalle.addEventListener('keydown', evento => {
+  const fila = evento.target.closest('.fila-nota');
+  if (fila && (evento.key === 'Enter' || evento.key === ' ')) {
+    evento.preventDefault();
+    abrirNota(fila.dataset.id);
+  }
+});
+
+// Botones «Cancelar» de los diálogos
+document.querySelectorAll('[data-cerrar]').forEach(boton => {
+  boton.addEventListener('click', () => boton.closest('dialog').close());
+});
+
+
+// ---------- Arranque ----------
+
+const inicio = cargarDatos();
+datos = inicio.datos;
+if (inicio.migrado) {
+  guardar();
+  mostrarAviso('He pasado a la app las notas que tenías en la hoja de Google. A partir de ahora se escriben aquí.', false);
+}
+pintarTodo();
 
 // Service worker para que la app se pueda instalar
 if ('serviceWorker' in navigator) {

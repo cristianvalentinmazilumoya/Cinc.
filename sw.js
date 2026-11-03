@@ -1,8 +1,7 @@
 // Service worker de Cinc: guarda los archivos de la página para que
-// abra aunque no haya conexión. Los datos de la hoja NO se guardan aquí
-// (las peticiones a Google pasan de largo).
+// abra aunque no haya conexión.
 
-const CACHE = 'cinc-v5';
+const CACHE = 'cinc-v6';
 
 const ARCHIVOS = [
   './',
@@ -40,9 +39,8 @@ self.addEventListener('activate', evento => {
 self.addEventListener('fetch', evento => {
   const url = new URL(evento.request.url);
   const esDeEstaWeb = url.origin === self.location.origin;
-  const esDatos = url.pathname.endsWith('datos-ejemplo.json');
 
-  if (evento.request.method !== 'GET' || !esDeEstaWeb || esDatos) return;
+  if (evento.request.method !== 'GET' || !esDeEstaWeb) return;
 
   evento.respondWith(
     fetch(evento.request)
