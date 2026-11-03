@@ -26,8 +26,12 @@ const formato = new Intl.NumberFormat('es-ES', {
   maximumFractionDigits: 2
 });
 
+// Porcentajes: «45», «33,3»
+const formatoPorcentaje = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
+
 // datos = { modulos: [{ id, nombre, sigla, reparto }],
-//           notas: [{ id, moduloId, actividad, tipo, nota, peso, comentario }],
+//           notas: [{ id, moduloId, actividad, tipo, nota, porcentaje, comentario }],
+//           porcentaje: lo que vale la actividad dentro de su grupo (null = automático)
 //           ultimaCopia: fecha ISO o null }
 let datos = { modulos: [], notas: [], ultimaCopia: null };
 let modulos = [];            // módulos con sus actividades y medias (se calcula)
@@ -87,10 +91,19 @@ function esCopiaValida(objeto) {
   return objeto && Array.isArray(objeto.modulos) && Array.isArray(objeto.notas);
 }
 
+// Las primeras pruebas usaban «peso» (1 = normal); ahora es «porcentaje»
+function completarNotas(objeto) {
+  for (const nota of objeto.notas) {
+    if (nota.porcentaje === undefined) nota.porcentaje = null;
+    delete nota.peso;
+  }
+  return objeto;
+}
+
 function cargarDatos() {
   try {
     const guardados = JSON.parse(localStorage.getItem(CLAVE));
-    if (esCopiaValida(guardados)) return { datos: guardados, migrado: false };
+    if (esCopiaValida(guardados)) return { datos: completarNotas(guardados), migrado: false };
   } catch (e) { /* nada guardado */ }
 
   // Primera vez con esta versión: si quedan las notas de la hoja de Google, se pasan
@@ -120,7 +133,6 @@ function leerFilas(filas) {
     tipo: columna('tipo'),
     actividad: columna('actividad'),
     nota: columna('nota'),
-    peso: columna('peso'),
     comentario: columna('comentario')
   };
   const celda = (fila, i) => (i === -1 ? '' : String(fila[i] ?? '').trim());
@@ -137,7 +149,6 @@ function leerFilas(filas) {
       tipo: celda(fila, col.tipo) === 'Examen' ? 'Examen' : 'Práctica',
       actividad: celda(fila, col.actividad),
       nota: aNumero(celda(fila, col.nota)),
-      peso: aNumero(celda(fila, col.peso)) ?? 1,
       comentario: celda(fila, col.comentario)
     });
   }
@@ -167,7 +178,7 @@ function desdeHoja(filas) {
       actividad: a.actividad,
       tipo: a.tipo,
       nota: a.nota,
-      peso: a.peso,
+      porcentaje: null,   // en la hoja todas valían lo mismo
       comentario: a.comentario
     });
   }
@@ -177,6 +188,31 @@ function desdeHoja(filas) {
 
 
 // ---------- Cálculos ----------
+
+// Calcula el peso de cada actividad dentro de su grupo (los exámenes, las
+// prácticas o todo el módulo). Las que tienen porcentaje usan el suyo; las que
+// no, se reparten a partes iguales lo que falte hasta el 100 %.
+// Devuelve un aviso si los porcentajes no cuadran.
+function repartirPorcentajes(actividades, nombreGrupo) {
+  const conPorcentaje = actividades.filter(a => a.porcentaje !== null);
+  const sinPorcentaje = actividades.length - conPorcentaje.length;
+  const asignado = conPorcentaje.reduce((suma, a) => suma + a.porcentaje, 0);
+  const resto = Math.max(100 - asignado, 0);
+  const parte = sinPorcentaje > 0 ? resto / sinPorcentaje : 0;
+
+  for (const a of actividades) {
+    a.peso = a.porcentaje !== null ? a.porcentaje : parte;
+    a.automatico = a.porcentaje === null;
+  }
+
+  if (asignado > 100) {
+    return `Los porcentajes de ${nombreGrupo} suman ${formatoPorcentaje.format(asignado)} %, más del 100 %.`;
+  }
+  if (sinPorcentaje > 0 && resto === 0) {
+    return `En ${nombreGrupo} ya hay un 100 % repartido: las actividades sin porcentaje no cuentan.`;
+  }
+  return null;
+}
 
 // Media ponderada (nota × peso / suma de pesos) de las actividades con nota.
 function mediaPonderada(actividades) {
@@ -195,6 +231,13 @@ function mediaPonderada(actividades) {
 function calcularModulo(modulo) {
   const examenes = modulo.actividades.filter(a => a.tipo === 'Examen');
   const practicas = modulo.actividades.filter(a => a.tipo !== 'Examen');
+
+  // Con reparto, el porcentaje de cada actividad es dentro de su grupo;
+  // sin reparto, es dentro de todo el módulo
+  const avisos = modulo.reparto
+    ? [repartirPorcentajes(examenes, 'los exámenes'), repartirPorcentajes(practicas, 'las prácticas')]
+    : [repartirPorcentajes(modulo.actividades, 'este módulo')];
+  modulo.avisos = avisos.filter(aviso => aviso !== null);
 
   modulo.mediaExamenes = mediaPonderada(examenes);
   modulo.mediaPracticas = mediaPonderada(practicas);
@@ -222,7 +265,8 @@ function calcularModulo(modulo) {
 function calcularTodo() {
   modulos = datos.modulos.map(m => ({
     ...m,
-    actividades: datos.notas.filter(n => n.moduloId === m.id)
+    // Copias: el cálculo añade el peso y no debe tocar los datos guardados
+    actividades: datos.notas.filter(n => n.moduloId === m.id).map(n => ({ ...n }))
   }));
   modulos.forEach(calcularModulo);
 }
@@ -344,7 +388,11 @@ function pintarDetalle() {
     <tr class="fila-nota ${a.nota === null ? 'pendiente' : ''}" data-id="${a.id}" tabindex="0"
         title="Editar esta nota">
       <td>${escapar(a.actividad)}</td>
-      <td class="${a.tipo === 'Examen' ? 'examen' : ''}">${escapar(a.tipo)}</td>
+      <td>
+        <span class="${a.tipo === 'Examen' ? 'examen' : ''}">${escapar(a.tipo)}</span>
+        <span class="porcentaje ${a.automatico ? 'automatico' : ''}"
+              title="${a.automatico ? 'Reparto automático' : 'Porcentaje indicado'}">${formatoPorcentaje.format(a.peso)} %</span>
+      </td>
       <td>
         <div class="celda-nota">
           <span class="num ${a.nota === null ? '' : 'color-' + nivel(a.nota)}">${formatear(a.nota)}</span>
@@ -377,6 +425,7 @@ function pintarDetalle() {
         <dd class="texto">${escapar(textoReparto(m.reparto))}</dd>
       </div>
     </dl>
+    ${m.avisos.map(aviso => `<p class="aviso aviso-modulo">${escapar(aviso)}</p>`).join('')}
     <table class="tabla">
       <thead>
         <tr>
@@ -439,14 +488,39 @@ function abrirNota(idNota, idModulo) {
   formNota.actividad.value = nota ? nota.actividad : '';
   formNota.tipo.value = nota ? nota.tipo : 'Práctica';
   formNota.nota.value = nota && nota.nota !== null ? String(nota.nota).replace('.', ',') : '';
-  formNota.peso.value = nota ? String(nota.peso).replace('.', ',') : '1';
+  formNota.porcentaje.value = nota && nota.porcentaje !== null ? String(nota.porcentaje).replace('.', ',') : '';
   formNota.comentario.value = nota ? nota.comentario : '';
   document.getElementById('borrar-nota').hidden = !nota;
   document.getElementById('error-nota').textContent = '';
+  explicarPorcentaje();
 
   dialogoNota.showModal();
   formNota.actividad.focus();
 }
+
+// El porcentaje es dentro de los exámenes o de las prácticas si el módulo tiene
+// reparto, y dentro de todo el módulo si no lo tiene
+function explicarPorcentaje() {
+  const modulo = datos.modulos.find(m => m.id === formNota.modulo.value);
+  const esExamen = formNota.tipo.value === 'Examen';
+  let etiqueta, grupo;
+
+  if (modulo && modulo.reparto) {
+    etiqueta = esExamen ? '% en exámenes' : '% en prácticas';
+    grupo = (esExamen ? 'los exámenes' : 'las prácticas') + ` de ${modulo.sigla}`;
+  } else {
+    etiqueta = '% del módulo';
+    grupo = `la nota de ${modulo ? modulo.sigla : 'el módulo'}`;
+  }
+
+  document.getElementById('etiqueta-porcentaje').textContent = etiqueta;
+  document.getElementById('ayuda-porcentaje').textContent =
+    `Cuánto vale esta actividad dentro de ${grupo}. Si no lo sabes, déjalo vacío: ` +
+    'lo que falte hasta el 100 % se reparte a partes iguales entre las actividades sin porcentaje.';
+}
+
+formNota.modulo.addEventListener('change', explicarPorcentaje);
+formNota.tipo.addEventListener('change', explicarPorcentaje);
 
 formNota.addEventListener('submit', evento => {
   evento.preventDefault();
@@ -455,7 +529,8 @@ formNota.addEventListener('submit', evento => {
   const actividad = formNota.actividad.value.trim();
   const textoNota = formNota.nota.value.trim();
   const nota = aNumero(textoNota);
-  const peso = aNumero(formNota.peso.value) ?? 1;
+  const textoPorcentaje = formNota.porcentaje.value.trim().replace('%', '');
+  const porcentaje = aNumero(textoPorcentaje);
 
   if (actividad === '') {
     error.textContent = 'Escribe el nombre de la actividad.';
@@ -465,8 +540,8 @@ formNota.addEventListener('submit', evento => {
     error.textContent = 'La nota tiene que ser un número de 0 a 10 (o déjala vacía).';
     return;
   }
-  if (peso <= 0) {
-    error.textContent = 'El peso tiene que ser mayor que 0.';
+  if (textoPorcentaje !== '' && (porcentaje === null || porcentaje <= 0 || porcentaje > 100)) {
+    error.textContent = 'El porcentaje tiene que estar entre 1 y 100 (o déjalo vacío).';
     return;
   }
 
@@ -475,7 +550,7 @@ formNota.addEventListener('submit', evento => {
     actividad: actividad,
     tipo: formNota.tipo.value,
     nota: nota,
-    peso: peso,
+    porcentaje: porcentaje,
     comentario: formNota.comentario.value.trim()
   };
 
@@ -648,7 +723,7 @@ async function importar(archivo) {
   try {
     const contenido = JSON.parse(await archivo.text());
     if (esCopiaValida(contenido)) {
-      nuevos = { modulos: contenido.modulos, notas: contenido.notas, ultimaCopia: contenido.exportado || null };
+      nuevos = completarNotas({ modulos: contenido.modulos, notas: contenido.notas, ultimaCopia: contenido.exportado || null });
     } else if (Array.isArray(contenido.filas)) {
       nuevos = desdeHoja(contenido.filas);   // copia de la antigua hoja de Google
     } else {

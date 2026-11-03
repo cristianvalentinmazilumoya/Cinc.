@@ -86,12 +86,13 @@
           <input name="nota" type="text" inputmode="decimal" autocomplete="off" placeholder="0 a 10">
         </label>
 
-        <label class="campo campo-corto">
-          <span>Peso</span>
-          <input name="peso" type="text" inputmode="decimal" autocomplete="off">
+        <label class="campo">
+          <span id="etiqueta-porcentaje">% en prácticas</span>
+          <input name="porcentaje" type="text" inputmode="decimal" autocomplete="off" placeholder="Auto">
         </label>
       </div>
-      <p class="ayuda">Si aún no tienes la nota, déjala vacía y saldrá como pendiente. El peso es 1 salvo que la actividad cuente más.</p>
+      <p class="ayuda">Si aún no tienes la nota, déjala vacía y saldrá como pendiente.</p>
+      <p id="ayuda-porcentaje" class="ayuda"></p>
 
       <label class="campo">
         <span>Comentario <em>(opcional)</em></span>

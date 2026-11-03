@@ -564,3 +564,16 @@ h1 .punto { color: var(--punto); }
   .campo-corto { flex-basis: 64px; }
   .dialogo { padding: 20px 16px; }
 }
+
+/* ---------- Porcentaje de cada actividad ---------- */
+.porcentaje {
+  display: block;
+  font-size: .78rem;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Los repartidos automáticamente, en cursiva */
+.porcentaje.automatico { font-style: italic; opacity: .8; }
+
+.aviso-modulo { margin: -8px 0 16px; }
