@@ -33,7 +33,10 @@
     <!-- Cursos (1.º, 2.º…) y la vista de todo el ciclo -->
     <nav id="cursos" class="cursos" aria-label="Cursos"></nav>
 
-    <p id="aviso" class="aviso" hidden></p>
+    <div id="aviso" class="aviso aviso-principal" role="status" hidden>
+      <span id="aviso-texto"></span>
+      <button type="button" id="cerrar-aviso" class="aviso-cerrar" aria-label="Cerrar el aviso" title="Cerrar">✕</button>
+    </div>
 
     <!-- Primer uso: todavía no hay módulos -->
     <section id="bienvenida" class="bienvenida" hidden>

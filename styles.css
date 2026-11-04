@@ -11,10 +11,12 @@
   --pista: #E6ECF2;
   --esqueleto: #E9EEF3;
 
-  --verde: #1E8A4C;
-  --ambar: #B7791F;
+  /* Colores de las notas: todos con contraste de al menos 4,5:1 sobre blanco */
+  --verde: #1A7A43;
+  --ambar: #975A16;
   --rojo: #C53030;
-  --gris: #8A96A3;
+  --gris: #66717F;
+  --texto-pastilla: #FFFFFF;   /* texto de las pastillas de valoración */
 
   --serifa: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -36,7 +38,8 @@
     --verde: #4CC27E;
     --ambar: #E3A948;
     --rojo: #F06C6C;
-    --gris: #7D8A99;
+    --gris: #8E9BAA;
+    --texto-pastilla: #0F1722;
   }
 }
 
@@ -181,7 +184,7 @@ h1 .punto { color: var(--punto); }
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 999px;
-  color: #FFFFFF;
+  color: var(--texto-pastilla);
   background: var(--gris);
 }
 
@@ -873,3 +876,40 @@ h1 .punto { color: var(--punto); }
 
 /* Enlaces dentro de los diálogos, con el color del texto */
 .dialogo a { color: var(--texto); font-weight: 600; }
+
+/* ---------- Aviso de arriba con botón para cerrarlo ---------- */
+.aviso-principal {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.aviso-principal #aviso-texto { flex: 1; }
+
+.aviso-cerrar {
+  font: inherit;
+  font-size: .9rem;
+  line-height: 1;
+  color: var(--texto-suave);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.aviso-cerrar:hover { color: var(--texto); background: var(--fondo); }
+.aviso-cerrar:focus-visible { outline: 3px solid var(--punto); outline-offset: 2px; }
+
+/* El estado / comentario va en su propia columna; en el móvil esa columna se
+   oculta y se muestra debajo del nombre */
+.estado-movil { display: none; }
+
+@media (max-width: 600px) {
+  .estado-movil {
+    display: block;
+    font-size: .78rem;
+    color: var(--texto-suave);
+    font-style: italic;
+  }
+}

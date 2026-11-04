@@ -448,6 +448,7 @@ function pintarDetalle() {
       <td>
         ${escapar(a.actividad)}
         ${detalles.length > 0 ? `<span class="detalle-nota">${escapar(detalles.join(' · '))}</span>` : ''}
+        ${estado ? `<span class="estado-movil">${escapar(estado)}</span>` : ''}
       </td>
       <td>
         <span class="${a.tipo === 'Examen' ? 'examen' : ''}">${escapar(a.tipo)}</span>
@@ -627,12 +628,25 @@ function pintarProximas() {
     </li>`).join('');
 }
 
-function mostrarAviso(texto, esError) {
+// Aviso de arriba. «tipo» sirve para saber qué aviso es al cerrarlo.
+function mostrarAviso(texto, esError, tipo = null) {
   const aviso = document.getElementById('aviso');
-  aviso.textContent = texto;
+  document.getElementById('aviso-texto').textContent = texto;
   aviso.classList.toggle('error', esError);
+  aviso.dataset.tipo = tipo || '';
   aviso.hidden = false;
 }
+
+// Al cerrar el recordatorio de la copia, no vuelve a salir en una semana
+const CLAVE_AVISO_COPIA = 'cinc-aviso-copia-cerrado';
+
+document.getElementById('cerrar-aviso').addEventListener('click', () => {
+  const aviso = document.getElementById('aviso');
+  if (aviso.dataset.tipo === 'copia') {
+    try { localStorage.setItem(CLAVE_AVISO_COPIA, String(Date.now())); } catch (e) { /* sin almacenamiento */ }
+  }
+  aviso.hidden = true;
+});
 
 // Vuelve a calcular y pintar todo después de cualquier cambio
 function pintarTodo() {
@@ -1194,6 +1208,7 @@ function cargarModulos(lista) {
     (actualizados > 0 ? ` y se actualizarán ${actualizados} que ya tienes (misma sigla)` : '') +
     '. Tus notas no se tocan. ¿Seguir?';
   if (!confirm(pregunta)) return;
+  const antes = JSON.stringify(datos);   // para poder deshacer
 
   for (const m of lista) {
     const existente = delCurso.find(x => x.sigla === m.sigla);
@@ -1208,7 +1223,7 @@ function cargarModulos(lista) {
   guardar();
   pintarTodo();
   if (dialogoCopia.open) dialogoCopia.close();
-  mostrarAviso(`Módulos cargados en ${curso.nombre}: ${nuevos} ${nuevos === 1 ? 'nuevo' : 'nuevos'} y ${actualizados} ${actualizados === 1 ? 'actualizado' : 'actualizados'}.`, false);
+  ofrecerDeshacer(`Módulos cargados en ${curso.nombre}: ${nuevos} ${nuevos === 1 ? 'nuevo' : 'nuevos'} y ${actualizados} ${actualizados === 1 ? 'actualizado' : 'actualizados'}.`, antes);
 }
 
 // Copia completa: cursos, módulos y notas
@@ -1295,20 +1310,24 @@ async function importar(archivo) {
     return;
   }
 
+  const antes = JSON.stringify(datos);   // para poder deshacer
   datos = nuevos;
   idSeleccionado = null;
   guardar();
   pintarTodo();
   if (dialogoCopia.open) dialogoCopia.close();
-  mostrarAviso(`Copia cargada: ${datos.modulos.length} módulos y ${datos.notas.length} notas.`, false);
+  ofrecerDeshacer(`Copia cargada: ${datos.modulos.length} módulos y ${datos.notas.length} notas.`, antes);
 }
 
 // Aviso si hay bastantes notas y hace más de un mes (o nunca) que no se hace copia
 function recordarCopia() {
   const unMes = 30 * 24 * 60 * 60 * 1000;
   const sinCopiaReciente = !datos.ultimaCopia || Date.now() - new Date(datos.ultimaCopia) > unMes;
-  if (datos.notas.length >= 5 && sinCopiaReciente) {
-    mostrarAviso('Tus notas solo están en este dispositivo. Haz una copia de seguridad de vez en cuando (botón «Copia»).', false);
+  let cerradoHace = Infinity;
+  try { cerradoHace = Date.now() - Number(localStorage.getItem(CLAVE_AVISO_COPIA) || 0); } catch (e) { /* sin almacenamiento */ }
+  const unaSemana = 7 * 24 * 60 * 60 * 1000;
+  if (datos.notas.length >= 5 && sinCopiaReciente && cerradoHace > unaSemana) {
+    mostrarAviso('Tus notas solo están en este dispositivo. Haz una copia de seguridad de vez en cuando (botón «Copia»).', false, 'copia');
   }
 }
 
