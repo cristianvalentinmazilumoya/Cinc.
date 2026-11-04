@@ -25,6 +25,7 @@
         <p id="resumen" class="resumen">Cargando notas…</p>
       </div>
       <div class="acciones">
+        <button type="button" id="boton-sync" class="boton" hidden>Sincronizar</button>
         <button type="button" id="boton-copia" class="boton">Copia</button>
         <button type="button" id="boton-nueva-nota" class="boton boton-primario" hidden>+ Añadir nota</button>
       </div>
@@ -249,6 +250,34 @@
     </div>
   </dialog>
 
+  <!-- Sincronización con la cuenta de Google -->
+  <dialog id="dialogo-sync" class="dialogo" aria-labelledby="titulo-sync">
+    <h2 id="titulo-sync">Sincronizar</h2>
+
+    <div id="sync-fuera">
+      <p>Inicia sesión con tu cuenta de Google en todos tus dispositivos y tus notas se sincronizarán solas: lo que cambies en uno aparece en los demás.</p>
+      <p class="ayuda">Sin iniciar sesión, Cinc sigue funcionando como siempre, solo en este dispositivo. Solo tú puedes ver tus notas.</p>
+      <div class="copia-botones">
+        <button type="button" id="boton-entrar" class="boton boton-primario">Iniciar sesión con Google</button>
+      </div>
+    </div>
+
+    <div id="sync-dentro" hidden>
+      <p>Sesión iniciada como <strong id="sync-cuenta"></strong>.</p>
+      <p id="sync-estado" class="ayuda"></p>
+      <div class="copia-botones">
+        <button type="button" id="boton-salir" class="boton">Cerrar sesión</button>
+      </div>
+      <p class="ayuda">Al cerrar sesión, las notas se quedan en este dispositivo, pero dejan de sincronizarse.</p>
+    </div>
+
+    <p id="error-sync" class="error" role="alert"></p>
+
+    <div class="dialogo-botones">
+      <button type="button" class="boton" data-cerrar>Cerrar</button>
+    </div>
+  </dialog>
+
   <!-- Copia de seguridad -->
   <dialog id="dialogo-copia" class="dialogo" aria-labelledby="titulo-copia">
     <h2 id="titulo-copia">Copia de seguridad</h2>
@@ -285,5 +314,8 @@
 
   <script src="calculos.js"></script>
   <script src="app.js"></script>
+  <!-- Sincronización con la cuenta de Google (Firebase). Va aparte: si no hay
+       conexión o no está configurada, el resto de la app funciona igual. -->
+  <script type="module" src="sync.js"></script>
 </body>
 </html>

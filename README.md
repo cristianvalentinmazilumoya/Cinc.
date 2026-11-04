@@ -61,6 +61,25 @@ La primera vez que se abre esta versión, si el navegador aún tenía las notas 
 
 Las notas y los porcentajes aceptan coma o punto decimal (`8,5` o `8.5`).
 
+## Sincronización (Firebase)
+
+Con la sesión de Google iniciada (botón «Sincronizar»), los datos se guardan también en Firestore, en el documento `usuarios/{uid}`, y los demás dispositivos con la misma cuenta los reciben al momento. Sin sesión, Cinc funciona solo en local.
+
+- `sync.js` (módulo aparte): carga Firebase desde el CDN solo si está configurado. Si no hay conexión, la app funciona igual.
+- `firebase-config.js`: la configuración del proyecto. Es pública; la seguridad la ponen las reglas.
+- `firestore.rules`: cada persona solo puede leer y escribir su propio documento.
+- El curso que se está viendo no se sincroniza: cada dispositivo puede mirar uno distinto.
+- La primera vez que se inicia sesión en un dispositivo con notas distintas de las de la cuenta, se pregunta cuáles usar. Las que se descartan se guardan en `cinc-datos-antes-sync`.
+- Si dos dispositivos cambian cosas a la vez sin conexión, se queda el último que sube.
+
+### Crear el proyecto de Firebase
+
+1. En https://console.firebase.google.com, «Crear un proyecto» (sin Google Analytics).
+2. **Authentication → Método de acceso → Google → Habilitar.**
+3. **Authentication → Configuración → Dominios autorizados → Añadir dominio:** `cristianvalentinmazilumoya.github.io`.
+4. **Firestore Database → Crear base de datos** (ubicación `europe-west`, modo producción). En **Reglas**, pega el contenido de `firestore.rules` y publica.
+5. **Configuración del proyecto → Tus apps → Web (`</>`)**: registra la app «Cinc» y copia el objeto `firebaseConfig` en `firebase-config.js`.
+
 ## Pruebas
 
 Abre `pruebas.html` (en local o en la web publicada). Cada caso de cálculo sale en verde si da lo esperado y en rojo si no. Si cambias `calculos.js`, vuelve a abrirla.
@@ -79,7 +98,7 @@ Y abre http://localhost:8000. Para pararlo: `Ctrl + C`.
 
 La web se publica con GitHub Pages desde la rama `main`. Al hacer push a `main`, en un minuto está en línea.
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v30` → `cinc-v31`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v31` → `cinc-v32`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
 
 ## Instalarla
 

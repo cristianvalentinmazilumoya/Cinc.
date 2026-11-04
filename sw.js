@@ -1,7 +1,7 @@
 // Service worker de Cinc: guarda los archivos de la página para que
 // abra aunque no haya conexión.
 
-const CACHE = 'cinc-v30';
+const CACHE = 'cinc-v31';
 
 const ARCHIVOS = [
   './',
@@ -9,6 +9,8 @@ const ARCHIVOS = [
   'styles.css',
   'calculos.js',
   'app.js',
+  'sync.js',
+  'firebase-config.js',
   'manifest.webmanifest',
   'icons/favicon.svg',
   'icons/favicon-32.png',

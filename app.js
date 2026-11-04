@@ -88,7 +88,9 @@ function escapar(texto) {
 
 // ---------- Guardar y cargar ----------
 
-function guardar() {
+// Guarda en el dispositivo y avisa a la sincronización (sync.js) de que hay
+// cambios. «avisar = false» cuando los datos llegan de la nube.
+function guardar(avisar = true) {
   try {
     localStorage.setItem(CLAVE, JSON.stringify(datos));
   } catch (e) {
@@ -98,7 +100,27 @@ function guardar() {
   if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persist();
   }
+  if (avisar) window.dispatchEvent(new Event('cinc:guardado'));
 }
+
+// Lo que usa sync.js para leer y cambiar los datos. El curso que se está
+// viendo no se sincroniza: cada dispositivo puede estar mirando uno distinto.
+window.cinc = {
+  datosParaSubir() {
+    const { cursoActual, ...resto } = datos;
+    return resto;
+  },
+  hayDatos() {
+    return datos.modulos.length > 0 || datos.notas.length > 0;
+  },
+  aplicarDatosRemotos(remotos) {
+    const visto = datos.cursoActual;
+    datos = completarNotas({ ...remotos, cursoActual: visto });
+    guardar(false);
+    pintarTodo();
+  },
+  mostrarAviso
+};
 
 function esCopiaValida(objeto) {
   return objeto && Array.isArray(objeto.modulos) && Array.isArray(objeto.notas);
