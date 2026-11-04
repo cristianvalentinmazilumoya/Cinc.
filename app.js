@@ -7,8 +7,6 @@ const VERSION = '2.1';
 
 // Dónde se guardan los datos (localStorage del navegador)
 const CLAVE = 'cinc-datos';
-// Copia de la hoja de Google que guardaba la versión anterior de la app
-const CLAVE_ANTIGUA = 'notas-daw1-ultimos-datos';
 
 // Plantilla para 1.º de DAW. «reparto» solo en los módulos con reparto
 // oficial publicado (% de exámenes y % de actividades).
@@ -68,12 +66,6 @@ function cuandoEs(iso) {
   if (dias === 0) return 'hoy';
   if (dias === 1) return 'mañana';
   return `en ${dias} días`;
-}
-
-// "Módulo" → "modulo", para comparar cabeceras sin tildes ni mayúsculas
-function normalizar(texto) {
-  return String(texto || '').trim().toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 // Evita que un texto escrito por el usuario se interprete como HTML
@@ -184,87 +176,9 @@ function completarNotas(objeto) {
 function cargarDatos() {
   try {
     const guardados = JSON.parse(localStorage.getItem(CLAVE));
-    if (esCopiaValida(guardados)) return { datos: completarNotas(guardados), migrado: false };
+    if (esCopiaValida(guardados)) return completarNotas(guardados);
   } catch (e) { /* nada guardado */ }
-
-  // Primera vez con esta versión: si quedan las notas de la hoja de Google, se pasan
-  try {
-    const antiguos = JSON.parse(localStorage.getItem(CLAVE_ANTIGUA));
-    if (antiguos && Array.isArray(antiguos.filas)) {
-      return { datos: completarNotas(desdeHoja(antiguos.filas)), migrado: true };
-    }
-  } catch (e) { /* no había hoja */ }
-
-  return { datos: completarNotas({ modulos: [], notas: [], ultimaCopia: null }), migrado: false };
-}
-
-
-// ---------- Importar desde la hoja de Google antigua ----------
-
-// Convierte las filas de la hoja en actividades. Las columnas se buscan por
-// el nombre de su cabecera, así da igual en qué orden estén.
-function leerFilas(filas) {
-  const filaCabecera = filas.findIndex(f => f.some(c => normalizar(c) === 'modulo'));
-  if (filaCabecera === -1) throw new Error('No encuentro la cabecera «Módulo»');
-
-  const cabeceras = filas[filaCabecera].map(normalizar);
-  const columna = nombre => cabeceras.findIndex(c => c.startsWith(nombre));
-  const col = {
-    modulo: columna('modulo'),
-    tipo: columna('tipo'),
-    actividad: columna('actividad'),
-    nota: columna('nota'),
-    comentario: columna('comentario')
-  };
-  const celda = (fila, i) => (i === -1 ? '' : String(fila[i] ?? '').trim());
-
-  const actividades = [];
-
-  for (let i = filaCabecera + 1; i < filas.length; i++) {
-    const fila = filas[i];
-    const modulo = celda(fila, col.modulo);
-    if (modulo === '') continue;   // fila vacía
-
-    actividades.push({
-      modulo: modulo,
-      tipo: celda(fila, col.tipo) === 'Examen' ? 'Examen' : 'Actividad',
-      actividad: celda(fila, col.actividad),
-      nota: aNumero(celda(fila, col.nota)),
-      comentario: celda(fila, col.comentario)
-    });
-  }
-
-  return actividades;
-}
-
-// Filas de la hoja → { modulos, notas }. Los módulos de la plantilla de DAW
-// se reconocen por la sigla o el nombre y conservan su reparto.
-function desdeHoja(filas) {
-  const nuevos = { modulos: [], notas: [], ultimaCopia: null };
-
-  for (const a of leerFilas(filas)) {
-    let modulo = nuevos.modulos.find(m => m.sigla === a.modulo.toUpperCase() || m.nombre === quitarCodigo(a.modulo));
-
-    if (!modulo) {
-      const plantilla = PLANTILLA_DAW1.find(p => p.sigla === a.modulo.toUpperCase() || p.nombre === quitarCodigo(a.modulo));
-      modulo = completarModulo(plantilla
-        ? plantilla
-        : { nombre: quitarCodigo(a.modulo), sigla: a.modulo.slice(0, 5).toUpperCase() });
-      nuevos.modulos.push(modulo);
-    }
-
-    nuevos.notas.push({
-      id: nuevoId(),
-      moduloId: modulo.id,
-      actividad: a.actividad,
-      tipo: a.tipo,
-      nota: a.nota,
-      porcentaje: null,   // en la hoja todas valían lo mismo
-      comentario: a.comentario
-    });
-  }
-
-  return nuevos;
+  return completarNotas({ modulos: [], notas: [], ultimaCopia: null });
 }
 
 
@@ -1320,8 +1234,6 @@ async function importar(archivo) {
       cursos: contenido.cursos, cursoActual: contenido.cursoActual, nombresSinCodigo: contenido.nombresSinCodigo,
       modulos: contenido.modulos, notas: contenido.notas, ultimaCopia: contenido.exportado || null
     });
-  } else if (Array.isArray(contenido.filas)) {
-    nuevos = completarNotas(desdeHoja(contenido.filas));   // copia de la antigua hoja de Google
   } else {
     fallo('Ese archivo no es una copia de Cinc.');
     return;
@@ -1445,12 +1357,7 @@ document.querySelectorAll('[data-cerrar]').forEach(boton => {
 
 // ---------- Arranque ----------
 
-const inicio = cargarDatos();
-datos = inicio.datos;
-if (inicio.migrado) {
-  guardar();
-  mostrarAviso('He pasado a la app las notas que tenías en la hoja de Google. A partir de ahora se escriben aquí.', false);
-}
+datos = cargarDatos();
 pintarTodo();
 
 // Service worker para que la app se pueda instalar

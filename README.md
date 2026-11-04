@@ -38,8 +38,6 @@ Al cargar una copia o unos módulos, se comprueba cada dato (notas de 0 a 10, po
 
 En `localStorage`, con la clave `cinc-datos`. Cada navegador y cada dispositivo tiene sus propios datos: no se sincronizan solos. Si alguien borra los datos del navegador, los pierde, por eso la app recuerda hacer una copia cuando hace más de un mes de la última.
 
-La primera vez que se abre esta versión, si el navegador aún tenía las notas de la versión anterior (la que leía la hoja de Google), las pasa solas al formato nuevo.
-
 ## Cómo se calculan las medias
 
 - **Reparto del módulo (imprescindible):** cuánto valen los exámenes y cuánto las actividades en la nota del módulo (por ejemplo, 60 % y 40 %). Se indica al crear o editar el módulo. **Sin reparto, la media del módulo queda pendiente**, con un aviso y un botón para indicarlo. Si los dos suman menos de 100 (por ejemplo DIG, 35 % y 45 %), el resto aún no cuenta.
@@ -98,7 +96,7 @@ Y abre http://localhost:8000. Para pararlo: `Ctrl + C`.
 
 La web se publica con GitHub Pages desde la rama `main`. Al hacer push a `main`, en un minuto está en línea.
 
-Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v31` → `cinc-v32`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
+Si modificas `index.html`, `styles.css` o `app.js`, sube el número de `CACHE` en `sw.js` (`cinc-v32` → `cinc-v33`). Las apps instaladas se actualizan solas la próxima vez que se abren con conexión.
 
 ## Instalarla
 
