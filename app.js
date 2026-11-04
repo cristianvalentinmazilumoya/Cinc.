@@ -352,10 +352,12 @@ function pintarDetalle() {
   }
   detalle.hidden = false;
 
-  // Primero las que tienen fecha (de la más antigua a la más nueva); las demás, en el orden en que se añadieron
+  // Orden: 1) las que ya tienen nota pero no fecha; 2) las que tienen fecha, de la más
+  // antigua a la más nueva; 3) las que no tienen ni nota ni fecha. Si empatan, en el orden en que se añadieron.
+  const grupo = a => a.fecha ? 1 : (a.nota !== null ? 0 : 2);
   const ordenadas = m.actividades
     .map((a, i) => ({ a, i }))
-    .sort((x, y) => (x.a.fecha || '9999') .localeCompare(y.a.fecha || '9999') || x.i - y.i)
+    .sort((x, y) => grupo(x.a) - grupo(y.a) || (x.a.fecha || '').localeCompare(y.a.fecha || '') || x.i - y.i)
     .map(x => x.a);
 
   const filas = ordenadas.map(a => {
