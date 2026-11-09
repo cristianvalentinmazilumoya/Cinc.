@@ -2,9 +2,11 @@
 
 ## Pendiente
 
-- [Cinc.] Revisar las tres distribuciones nuevas y elegir una para aplicar a la app real · empezada por Codex · 2026-11-09
+- [Cinc.] Revisar la propuesta C ajustada y confirmar si se aplica a la app real · empezada por Codex · 2026-11-09
 
 ## Historial
+
+2026-11-09 23:32 · Codex · Cinc. · Pedido: quitar de la propuesta C el avance estimado de evaluación porque las pruebas aún no están todas registradas · Hecho: eliminado el porcentaje y reorganizada la cabecera para mostrar solo la media según las notas guardadas y la próxima fecha registrada; capturas y documentación actualizadas · Pendiente: Cristian revisa la propuesta C ajustada y confirma si quiere aplicarla
 
 2026-11-09 23:32 · Codex · Cinc. · Pedido: revisar los prototipos porque eran la misma distribución con distinto color · Hecho: rehice las tres composiciones (familiar, módulos en lateral y panel de curso), actualicé las capturas y documenté sus diferencias · Pendiente: Cristian revisa las nuevas distribuciones y elige una
 

@@ -47,7 +47,7 @@ Publicada en GitHub Pages: https://cristianvalentinmazilumoya.github.io/Cinc./
 
 - La app funciona y está publicada; sincroniza entre Mac e iPhone.
 - 35 notas en 9 módulos de 1.º, todas con fecha.
-- Prototipos del rediseño listos en `prototipos/`: tres distribuciones distintas con capturas en claro/oscuro y móvil/escritorio (familiar, módulos en lateral y panel de curso). Falta que Cristian elija una para aplicar el diseño a la app real.
+- Prototipos del rediseño listos en `prototipos/`: tres distribuciones distintas con capturas en claro/oscuro y móvil/escritorio (familiar, módulos en lateral y panel de curso). La propuesta C se ajustó para no mostrar un porcentaje de avance del curso, ya que las fechas y evaluaciones aún no registradas impiden dar una cifra fiable. Falta que Cristian elija una para aplicar el diseño a la app real.
 
 ## Encargo completado: prototipos de rediseño
 

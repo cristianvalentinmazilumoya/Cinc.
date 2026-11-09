@@ -4,7 +4,7 @@ Las tres opciones proponen distribuciones y recorridos distintos, con datos de e
 
 - **A · Distribución familiar** (`a-calma.html`): conserva el orden reconocible de Cinc: cabecera y cursos, resumen, módulos en cuadrícula y después el detalle. En escritorio, el detalle y el alta quedan juntos al final; en móvil se apilan.
 - **B · Módulo al centro** (`b-cuaderno.html`): convierte la vista en un espacio de trabajo de tres zonas: módulos a la izquierda, notas en el centro y registro rápido a la derecha. En móvil esas zonas se apilan para navegar módulo por módulo.
-- **C · Panel de curso** (`c-panel.html`): pone primero los indicadores y la próxima entrega, después compara los módulos junto a la agenda y deja el detalle completo al pie. Está pensado para revisar el curso de un vistazo.
+- **C · Panel de curso** (`c-panel.html`): pone la media calculada con las notas guardadas y la próxima fecha registrada arriba; después compara los módulos junto a la agenda y deja el detalle completo al pie. No estima qué parte del curso está evaluada.
 
 ## Capturas
 
