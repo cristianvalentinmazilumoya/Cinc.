@@ -18,10 +18,4 @@ En `capturas/` hay cuatro PNG por propuesta: móvil (390 × 844) y escritorio (1
 
 ## Nombre y logo
 
-La lámina [identidad/index.html](identidad/index.html) compara tres opciones, cada una con símbolo, nombre y vista de icono de app:
-
-- **Cinc**: conservar el nombre y pulir su símbolo para mantener continuidad.
-- **Nota a nota**: nombre directo y cercano, acompañado de un cuaderno con una evaluación marcada.
-- **Quadern**: identidad con guiño catalán, inspirada en la libreta de notas.
-
-Capturas de la lámina: `identidad/captura-1440x1000-claro.png`, `identidad/captura-1440x1000-oscuro.png`, `identidad/captura-390x844-claro.png` e `identidad/captura-390x844-oscuro.png`. Los nombres e iconos actuales no se han cambiado.
+La exploración está en [identidad/README.md](identidad/README.md) y [identidad/index.html](identidad/index.html). Compara tres direcciones desarrolladas con argumento, tono, paleta y una muestra de interfaz: **Cinc** (continuidad), **Nota a nota** (descriptiva) y **Quadern** (local). Cada una tiene un símbolo vectorial SVG independiente. La app publicada conserva su identidad actual.

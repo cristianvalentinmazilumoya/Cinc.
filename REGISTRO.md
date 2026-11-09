@@ -16,6 +16,8 @@
 
 2026-11-09 22:27 · Claude Code · Cinc. · Pedido: activar la memoria compartida y dejar a Codex el rediseño de la app con capturas de prototipos · Hecho: CONTEXTO.md (qué es, estructura, decisiones y el encargo de rediseño) y este registro · Pendiente: Codex crea los prototipos y las capturas en prototipos/
 
+2026-11-09 23:53 · Codex · Cinc. · Pedido: desarrollar mejor las propuestas de nombre y logo · Hecho: rehice la lámina con argumentos de marca, voz, paleta y ejemplo aplicado a la interfaz; añadí tres símbolos SVG independientes y capturas completas de escritorio · Pendiente: Cristian decide si conserva Cinc o adopta otra identidad
+
 ## Resumen
 
 Antes de activar la memoria compartida, Cinc pasó de leer una hoja de Google a ser una PWA con datos locales, cursos (1.º, 2.º, Ciclo), copias de seguridad, pruebas de los cálculos y sincronización con Firebase entre Mac e iPhone. Se quitó el código de la antigua hoja, se ordenaron las notas (sin fecha con nota primero, luego por fecha) y se pusieron fechas a las 35 notas a partir de Moodle.
