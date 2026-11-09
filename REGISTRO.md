@@ -2,7 +2,7 @@
 
 ## Pendiente
 
-- [Cinc.] Elegir la distribución C para la app y decidir si conserva Cinc o adopta otra identidad · empezada por Codex · 2026-11-09
+- [Cinc.] Decidir si aplicar la distribución C y elegir entre los nombres Cinc, Traça y Barem · empezada por Codex · 2026-11-09
 
 ## Historial
 
@@ -17,6 +17,10 @@
 2026-11-09 22:27 · Claude Code · Cinc. · Pedido: activar la memoria compartida y dejar a Codex el rediseño de la app con capturas de prototipos · Hecho: CONTEXTO.md (qué es, estructura, decisiones y el encargo de rediseño) y este registro · Pendiente: Codex crea los prototipos y las capturas en prototipos/
 
 2026-11-09 23:53 · Codex · Cinc. · Pedido: desarrollar mejor las propuestas de nombre y logo · Hecho: rehice la lámina con argumentos de marca, voz, paleta y ejemplo aplicado a la interfaz; añadí tres símbolos SVG independientes y capturas completas de escritorio · Pendiente: Cristian decide si conserva Cinc o adopta otra identidad
+
+2026-11-10 00:09 · Codex · Cinc. · Pedido: buscar nombres mejores y trabajar más los iconos del logo · Hecho: nueva comparación con Cinc, Traça y Barem; tres símbolos SVG originales redibujados para conservar la misma forma en cada tamaño; documentación y capturas actualizadas · Pendiente: Cristian elige nombre e identidad
+
+2026-11-10 00:13 · Codex · Cinc. · Pedido: revisar y pulir las propuestas de nombre y los iconos · Hecho: símbolos afinados y comparativa visual verificada en claro/oscuro; se retiraron los conceptos anteriores y se actualizaron las referencias del proyecto · Pendiente: Cristian elige nombre e identidad
 
 ## Resumen
 

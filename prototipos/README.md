@@ -18,4 +18,4 @@ En `capturas/` hay cuatro PNG por propuesta: móvil (390 × 844) y escritorio (1
 
 ## Nombre y logo
 
-La exploración está en [identidad/README.md](identidad/README.md) y [identidad/index.html](identidad/index.html). Compara tres direcciones desarrolladas con argumento, tono, paleta y una muestra de interfaz: **Cinc** (continuidad), **Nota a nota** (descriptiva) y **Quadern** (local). Cada una tiene un símbolo vectorial SVG independiente. La app publicada conserva su identidad actual.
+La exploración de nombre y logo está en [identidad/README.md](identidad/README.md) y [identidad/index.html](identidad/index.html). Compara **Cinc** (continuidad), **Traça** (el rastro de las evaluaciones) y **Barem** (la escala de valoración), con tres iconos vectoriales propios reutilizados en la lámina. La app publicada conserva su identidad actual.

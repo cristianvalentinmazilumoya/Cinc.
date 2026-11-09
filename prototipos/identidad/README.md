@@ -1,33 +1,18 @@
-# Exploración de nombre e identidad
+# Exploración de nombre y logo
 
-La lámina `index.html` compara tres direcciones sobre la misma distribución de Cinc. Cada una incluye el símbolo en tamaño grande, carácter, voz, paleta y una muestra de cómo se leería en la cabecera y lista de módulos. Los iconos SVG son propuestas vectoriales independientes; no están instalados en la PWA.
+`index.html` compara tres identidades sobre la distribución C de la app. La lámina muestra el concepto del nombre, su tono, el mismo icono vectorial en una cabecera realista y una prueba a 24 px.
 
-## 01 · Cinc
+## Propuestas
 
-Mantiene el nombre que ya identifica el proyecto. La ce abierta y el punto ámbar trasladan el nombre a un icono cuadrado; la pequeña barra interior recuerda el cinco sin dibujar una nota o un gráfico de progreso. Paleta azul tinta, ámbar y gris papel. Es la vía de continuidad y requiere menos cambio para las personas que ya usan Cinc.
+- **Cinc**: conserva el nombre conocido. Cinco módulos forman una ce abierta; el acento ámbar distingue la última pieza.
+- **Traça**: nombre corto en catalán para el rastro que dejan las evaluaciones registradas. Un trazo con tres puntos y una cedilla construyen el símbolo.
+- **Barem**: parte de la escala usada para valorar una prueba. Una be dibujada a medida y un punto de referencia forman el icono.
 
-- Símbolo: [cinc.svg](cinc.svg)
-- Voz: «Tus notas, en su sitio.»
-- Consideración: fuera de un entorno catalanohablante, puede no ser evidente que “cinc” significa cinco.
+Cada propuesta tiene un SVG reutilizado sin cambios en los distintos tamaños: [cinc.svg](cinc.svg), [traca.svg](traca.svg) y [barem.svg](barem.svg). Las otras pruebas de nombre anteriores se retiraron de la lámina para que esta comparación contenga solo las tres propuestas actuales.
 
-## 02 · Nota a nota
+## Capturas
 
-Un nombre descriptivo para el hábito de registrar exámenes, actividades y recuperaciones. El símbolo es una hoja con una evaluación marcada, no un indicador que sugiera que conocemos todas las evaluaciones del curso. Paleta verde hoja, albaricoque y papel.
+- [Vista clara (1440 × 2000)](captura-1440x2000-claro.png)
+- [Vista oscura (1440 × 2000)](captura-1440x2000-oscuro.png)
 
-- Símbolo: [nota-a-nota.svg](nota-a-nota.svg)
-- Voz: «Cada evaluación cuenta.»
-- Consideración: se entiende rápido, pero ocupa más espacio en la cabecera y resulta menos distintivo como nombre.
-
-## 03 · Quadern
-
-Una opción con identidad local basada en la libreta de clase. El marcador distingue el icono y se puede reutilizar como recurso visual para etiquetas, módulos y fechas. Paleta ciruela, rosa teja y papel cálido.
-
-- Símbolo: [quadern.svg](quadern.svg)
-- Voz: «El curs, apunt a apunt.»
-- Consideración: tiene carácter en Cataluña, aunque fuera de un entorno catalanohablante puede necesitar explicación.
-
-## Captura
-
-`captura-1440x2200-claro.png` muestra la comparación completa de escritorio en claro; `captura-1440x2200-oscuro.png`, en oscuro. La versión móvil queda disponible en el propio HTML responsive.
-
-Esta es una exploración para comentar. No cambia el nombre, el icono ni la paleta de la app publicada.
+La búsqueda abierta sirve para descartar coincidencias visibles —por ejemplo, Pondera y Gradia ya se asocian con seguimiento de notas—, pero no confirma disponibilidad de marcas, dominios o tiendas. Los nombres y logos son prototipos; no se han aplicado a la PWA.

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-labelledby="titulo descripcion">
+  <title id="titulo">Barem</title>
+  <desc id="descripcion">Una be minúscula trazada a mano con un punto ámbar en el centro.</desc>
+  <rect width="100" height="100" rx="27" fill="#76502e"/>
+  <path d="M35 77V24h17c12 0 19 6 19 15s-8 14-20 14H35m16 0h5c13 0 20 5 20 14s-8 15-21 15H35" fill="none" stroke="#fff9ee" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="70" cy="51" r="5.5" fill="#f2b657" stroke="#76502e" stroke-width="2"/>
+</svg>

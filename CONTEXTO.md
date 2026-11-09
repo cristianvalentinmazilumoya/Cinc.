@@ -43,11 +43,11 @@ Publicada en GitHub Pages: https://cristianvalentinmazilumoya.github.io/Cinc./
 - Contraste de colores accesible (mínimo 4,5:1), también en modo oscuro.
 - Commits en español, sin líneas `Co-Authored-By` ni menciones a ninguna IA.
 
-## Estado actual (2026-11-09)
+## Estado actual (2026-11-10)
 
 - La app funciona y está publicada; sincroniza entre Mac e iPhone.
 - 35 notas en 9 módulos de 1.º, todas con fecha.
-- Prototipos del rediseño listos en `prototipos/`: tres distribuciones distintas con capturas en claro/oscuro y móvil/escritorio (familiar, módulos en lateral y panel de curso). La propuesta C se ajustó para no mostrar un porcentaje de avance del curso, ya que las fechas y evaluaciones aún no registradas impiden dar una cifra fiable. También hay una comparación desarrollada de tres identidades (Cinc, Nota a nota y Quadern), con paleta, voz, ejemplo aplicado a la interfaz y símbolos SVG separados en `prototipos/identidad/`; la identidad actual sigue sin cambios hasta que Cristian elija. Falta que Cristian elija una para aplicar el diseño a la app real.
+- Prototipos del rediseño listos en `prototipos/`: tres distribuciones distintas con capturas en claro/oscuro y móvil/escritorio (familiar, módulos en lateral y panel de curso). La propuesta C se ajustó para no mostrar un porcentaje de avance del curso, ya que las fechas y evaluaciones aún no registradas impiden dar una cifra fiable. La exploración de identidad en `prototipos/identidad/` compara Cinc, Traça y Barem con símbolos SVG originales y consistentes entre tamaños. No modifica la PWA; Cristian decidirá por separado si quiere aplicar el rediseño y si cambia el nombre.
 
 ## Encargo completado: prototipos de rediseño
 
