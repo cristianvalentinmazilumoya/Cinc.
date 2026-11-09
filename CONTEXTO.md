@@ -47,15 +47,10 @@ Publicada en GitHub Pages: https://cristianvalentinmazilumoya.github.io/Cinc./
 
 - La app funciona y está publicada; sincroniza entre Mac e iPhone.
 - 35 notas en 9 módulos de 1.º, todas con fecha.
-- En marcha: **rediseño de la interfaz, encargado a Codex** (ver `REGISTRO.md`, sección Pendiente).
+- Prototipos del rediseño listos en `prototipos/`: tres propuestas estáticas con capturas en claro/oscuro y móvil/escritorio. Falta que Cristian elija una para aplicar el diseño a la app real.
 
-## Encargo para Codex: rediseño
+## Encargo completado: prototipos de rediseño
 
-Objetivo: proponer un rediseño que mejore la app (más clara, más agradable y cómoda en el móvil) sin perder ninguna función.
+Se prepararon tres alternativas estáticas (Calma académica, Cuaderno de curso y Panel compacto) con datos de ejemplo; cada una incluye resumen del curso, listado de módulos, detalle y formulario de nueva nota. `prototipos/README.md` reúne la descripción y las capturas.
 
-1. **No toques todavía la app real** (`index.html`, `styles.css`, `app.js`). Primero son solo prototipos.
-2. Crea la carpeta `prototipos/` con 2 o 3 propuestas distintas, cada una en su propio HTML estático (por ejemplo `prototipos/a-tarjetas.html`), con datos de ejemplo parecidos a los reales (módulos de DAW1, notas, medias, «Pendiente»).
-3. Cada propuesta debe mostrar al menos: la pantalla principal (resumen + lista de módulos), el detalle de un módulo con sus notas y el formulario de añadir nota.
-4. Saca capturas PNG de cada propuesta en `prototipos/capturas/`: móvil (390 × 844) y escritorio (1440 × 900), en modo claro y oscuro. Por ejemplo con Chrome sin ventana: `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --screenshot=... --window-size=390,844 archivo.html`.
-5. Escribe `prototipos/README.md` con una frase por propuesta (idea y ventajas) y la lista de capturas, para que Cristian elija.
-6. Haz commit de los prototipos y apunta en `REGISTRO.md` que están listos. Cristian elegirá una propuesta y después se aplicará a la app real.
+Pendiente de decisión: Cristian elegirá una propuesta; después se aplicará a `index.html`, `styles.css` y, si hace falta, `app.js`. El encargo original está anotado como completado en `REGISTRO.md`.
