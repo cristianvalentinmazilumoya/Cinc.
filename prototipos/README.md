@@ -15,3 +15,13 @@ En `capturas/` hay cuatro PNG por propuesta: móvil (390 × 844) y escritorio (1
 | A · Distribución familiar | `a-calma-390x844-claro.png` | `a-calma-390x844-oscuro.png` | `a-calma-1440x900-claro.png` | `a-calma-1440x900-oscuro.png` |
 | B · Módulo al centro | `b-cuaderno-390x844-claro.png` | `b-cuaderno-390x844-oscuro.png` | `b-cuaderno-1440x900-claro.png` | `b-cuaderno-1440x900-oscuro.png` |
 | C · Panel de curso | `c-panel-390x844-claro.png` | `c-panel-390x844-oscuro.png` | `c-panel-1440x900-claro.png` | `c-panel-1440x900-oscuro.png` |
+
+## Nombre y logo
+
+La lámina [identidad/index.html](identidad/index.html) compara tres opciones, cada una con símbolo, nombre y vista de icono de app:
+
+- **Cinc**: conservar el nombre y pulir su símbolo para mantener continuidad.
+- **Nota a nota**: nombre directo y cercano, acompañado de un cuaderno con una evaluación marcada.
+- **Quadern**: identidad con guiño catalán, inspirada en la libreta de notas.
+
+Capturas de la lámina: `identidad/captura-1440x1000-claro.png`, `identidad/captura-1440x1000-oscuro.png`, `identidad/captura-390x844-claro.png` e `identidad/captura-390x844-oscuro.png`. Los nombres e iconos actuales no se han cambiado.

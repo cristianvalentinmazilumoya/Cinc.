@@ -2,9 +2,11 @@
 
 ## Pendiente
 
-- [Cinc.] Revisar la propuesta C ajustada y confirmar si se aplica a la app real · empezada por Codex · 2026-11-09
+- [Cinc.] Elegir la distribución C para la app y decidir si conserva Cinc o adopta otra identidad · empezada por Codex · 2026-11-09
 
 ## Historial
+
+2026-11-09 23:32 · Codex · Cinc. · Pedido: crear prototipos de nombre y logo para la aplicación · Hecho: lámina comparativa con Cinc, Nota a nota y Quadern, símbolos y variantes de icono; capturas móvil/escritorio en claro/oscuro · Pendiente: Cristian elige si mantiene Cinc o prefiere otra identidad
 
 2026-11-09 23:32 · Codex · Cinc. · Pedido: quitar de la propuesta C el avance estimado de evaluación porque las pruebas aún no están todas registradas · Hecho: eliminado el porcentaje y reorganizada la cabecera para mostrar solo la media según las notas guardadas y la próxima fecha registrada; capturas y documentación actualizadas · Pendiente: Cristian revisa la propuesta C ajustada y confirma si quiere aplicarla
 
