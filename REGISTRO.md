@@ -2,8 +2,11 @@
 
 ## Pendiente
 
+- [Cinc.] Revisar las tres distribuciones nuevas y elegir una para aplicar a la app real · empezada por Codex · 2026-11-09
 
 ## Historial
+
+2026-11-09 23:32 · Codex · Cinc. · Pedido: revisar los prototipos porque eran la misma distribución con distinto color · Hecho: rehice las tres composiciones (familiar, módulos en lateral y panel de curso), actualicé las capturas y documenté sus diferencias · Pendiente: Cristian revisa las nuevas distribuciones y elige una
 
 2026-11-09 22:47 · Codex · Cinc. · Pedido: completar el rediseño encargado con prototipos y capturas · Hecho: tres prototipos estáticos y 12 capturas PNG (móvil/escritorio, claro/oscuro), documentados en `prototipos/README.md`; la app real no se modificó · Pendiente: Cristian elige una propuesta para aplicarla a la app real
 
