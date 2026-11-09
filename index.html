@@ -8,8 +8,8 @@
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0F1722" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#F0F7F5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101923" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -22,7 +22,7 @@
     <header class="cabecera">
       <div class="cabecera-texto">
         <h1>Cinc<span class="punto">.</span></h1>
-        <p id="resumen" class="resumen">Cargando notas…</p>
+        <p class="lema">Tus notas de DAW · Institut Vidal i Barraquer</p>
       </div>
       <div class="acciones">
         <button type="button" id="boton-sync" class="boton" hidden>Sincronizar</button>
@@ -50,34 +50,53 @@
       </div>
     </section>
 
-    <!-- Exámenes y entregas con fecha que aún no tienen nota -->
-    <section id="proximas" class="proximas" aria-labelledby="titulo-proximas" hidden>
-      <div class="titulo-con-boton">
-        <h2 id="titulo-proximas" class="titulo-seccion">Próximas fechas</h2>
-        <button type="button" id="boton-calendario" class="boton-enlace boton-pequeno">Añadir al calendario</button>
+    <!-- Arriba: la media del curso y la próxima fecha -->
+    <section id="panel-curso" class="panel panel-curso" aria-label="Resumen del curso" hidden>
+      <div class="panel-media">
+        <p id="etiqueta-media" class="etiqueta">Media del curso</p>
+        <p id="media-curso" class="cifra num">—</p>
+        <p id="resumen" class="resumen">Cargando notas…</p>
       </div>
-      <ul id="lista-proximas" class="lista-proximas"></ul>
+      <div id="panel-proxima" class="panel-proxima"></div>
     </section>
 
-    <!-- Vista «Ciclo»: un resumen por curso -->
-    <section id="seccion-ciclo" aria-labelledby="titulo-ciclo" hidden>
-      <h2 id="titulo-ciclo" class="titulo-seccion">Cursos</h2>
-      <div id="lista-cursos" class="rejilla"></div>
-    </section>
+    <div class="columnas">
+      <!-- Vista «Ciclo»: un resumen por curso -->
+      <section id="seccion-ciclo" class="panel" aria-labelledby="titulo-ciclo" hidden>
+        <div class="panel-cabecera">
+          <h2 id="titulo-ciclo">Cursos</h2>
+        </div>
+        <div id="lista-cursos" class="lista-modulos"></div>
+      </section>
 
-    <section id="seccion-modulos" aria-labelledby="titulo-modulos">
-      <div class="titulo-con-boton">
-        <h2 id="titulo-modulos" class="titulo-seccion">Módulos</h2>
-        <button type="button" class="boton-enlace boton-pequeno" data-accion="editar-curso">Editar curso</button>
-      </div>
-      <div id="modulos" class="rejilla"></div>
-    </section>
+      <section id="seccion-modulos" class="panel" aria-labelledby="titulo-modulos">
+        <div class="panel-cabecera">
+          <h2 id="titulo-modulos">Módulos</h2>
+          <div class="panel-botones">
+            <button type="button" class="boton-enlace boton-pequeno" data-accion="editar-curso">Editar curso</button>
+            <button type="button" id="boton-nuevo-modulo" class="boton boton-suave">+ Módulo</button>
+          </div>
+        </div>
+        <div id="modulos" class="lista-modulos"></div>
+      </section>
 
-    <section id="detalle" class="detalle" aria-live="polite" hidden></section>
+      <!-- Exámenes y entregas con fecha que aún no tienen nota -->
+      <section id="proximas" class="panel" aria-labelledby="titulo-proximas" hidden>
+        <p class="etiqueta">Agenda</p>
+        <div class="panel-cabecera">
+          <h2 id="titulo-proximas">Próximas evaluaciones</h2>
+          <button type="button" id="boton-calendario" class="boton-enlace boton-pequeno">Añadir al calendario</button>
+        </div>
+        <ul id="lista-proximas" class="lista-proximas"></ul>
+        <p id="sin-proximas" class="ayuda" hidden>No tienes ningún examen ni entrega con fecha pendiente de nota.</p>
+      </section>
+    </div>
+
+    <section id="detalle" class="panel detalle" aria-live="polite" hidden></section>
 
     <footer class="pie">
-      Tus notas se guardan solo en este dispositivo. Haz una copia de seguridad de vez en cuando
-      desde el botón <strong>Copia</strong>.
+      Tus notas se guardan en este dispositivo y, si inicias sesión en <strong>Sincronizar</strong>,
+      también en tu cuenta. Para tener una copia aparte, usa <strong>Copia</strong>.
       <button type="button" id="boton-acerca" class="boton-enlace boton-pequeno">Acerca de Cinc</button>
     </footer>
   </main>
@@ -234,7 +253,7 @@
     <p>Cinc apunta tus notas de clase y calcula las medias de cada módulo, de cada curso y del ciclo.</p>
 
     <h3 class="dialogo-subtitulo">Tus datos</h3>
-    <p>Se guardan <strong>solo en este dispositivo</strong>, en el navegador. No hay cuentas ni servidor: nadie más los ve. Por eso, si borras los datos del navegador o cambias de móvil, se pierden. Haz una copia de seguridad de vez en cuando desde «Copia».</p>
+    <p>Se guardan en este dispositivo, en el navegador. Si inicias sesión en «Sincronizar», también se guardan en tu cuenta de Google y aparecen en todos tus dispositivos; solo tú puedes verlas. Sin iniciar sesión, si borras los datos del navegador o cambias de móvil, se pierden: haz una copia de seguridad de vez en cuando desde «Copia».</p>
 
     <h3 class="dialogo-subtitulo">Cómo se calculan las medias</h3>
     <ul class="lista-acerca">

@@ -35,6 +35,8 @@ Publicada en GitHub Pages: https://cristianvalentinmazilumoya.github.io/Cinc./
 - **Media del curso y del ciclo ponderada por horas** (norma oficial de Cataluña).
 - **Sincronización con Firebase** en vez de copias manuales: el usuario no quiere subir un archivo cada vez.
 - **Orden de las notas en un módulo**: primero las que tienen nota y no tienen fecha, luego por fecha (de la más antigua a la más nueva) y al final las que no tienen ni nota ni fecha.
+- **Diseño «Panel de curso» (propuesta C, aplicada en la versión 3.0)**: arriba la media del curso y la próxima fecha; debajo, la lista de módulos junto a la agenda de próximas evaluaciones (en pantallas de menos de 900 px, la agenda pasa debajo); al final, el detalle del módulo con sus notas en una sola lista (no en dos columnas, para leerlas en orden de fecha). Color de acento verde azulado. Se mantienen todas las funciones anteriores (sincronizar, copia, «¿cuánto necesito?», reparto, mínimos, cursos y ciclo).
+- **Capturas de móvil**: Chrome sin ventana (`--headless`) no baja de 500 px de ancho aunque se pida 390, así que la captura sale recortada y parece que la página se desborda. Para probar a 390 px, carga la página dentro de un `<iframe>` de 390 px.
 
 ## Convenciones
 
@@ -47,10 +49,11 @@ Publicada en GitHub Pages: https://cristianvalentinmazilumoya.github.io/Cinc./
 
 - La app funciona y está publicada; sincroniza entre Mac e iPhone.
 - 35 notas en 9 módulos de 1.º, todas con fecha.
-- Prototipos del rediseño listos en `prototipos/`: tres distribuciones distintas con capturas en claro/oscuro y móvil/escritorio (familiar, módulos en lateral y panel de curso). La propuesta C se ajustó para no mostrar un porcentaje de avance del curso, ya que las fechas y evaluaciones aún no registradas impiden dar una cifra fiable. La exploración de identidad en `prototipos/identidad/` compara Cinc, Traça y Barem con símbolos SVG originales y consistentes entre tamaños. No modifica la PWA; Cristian decidirá por separado si quiere aplicar el rediseño y si cambia el nombre.
+- Prototipos del rediseño listos en `prototipos/`: tres distribuciones distintas con capturas en claro/oscuro y móvil/escritorio (familiar, módulos en lateral y panel de curso). La propuesta C se ajustó para no mostrar un porcentaje de avance del curso, ya que las fechas y evaluaciones aún no registradas impiden dar una cifra fiable. La exploración de identidad en `prototipos/identidad/` compara Cinc, Traça y Barem con símbolos SVG originales y consistentes entre tamaños; Cristian decidirá por separado si cambia el nombre.
+- **La propuesta C ya está aplicada a la app real** (versión 3.0, caché `cinc-v34`), con los arreglos: un solo botón «+ Añadir nota», notas en una sola lista, y sincronización, «¿cuánto necesito?», barras de nota, reparto y avisos conservados.
 
 ## Encargo completado: prototipos de rediseño
 
 Tras la revisión de Cristian, se rehízo la primera tanda, que solo variaba el aspecto. Ahora hay tres composiciones estáticas (Distribución familiar, Módulo al centro y Panel de curso) con datos de ejemplo; cada una incluye resumen del curso, listado de módulos, detalle y formulario de nueva nota. `prototipos/README.md` reúne la descripción y las capturas.
 
-Pendiente de decisión: Cristian elegirá una propuesta; después se aplicará a `index.html`, `styles.css` y, si hace falta, `app.js`. El encargo original está anotado como completado en `REGISTRO.md`.
+Cristian eligió la propuesta C y Claude Code la aplicó a `index.html`, `styles.css` y `app.js` el 2026-11-10. El encargo original está anotado como completado en `REGISTRO.md`.

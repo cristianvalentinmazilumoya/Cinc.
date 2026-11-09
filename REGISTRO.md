@@ -2,7 +2,8 @@
 
 ## Pendiente
 
-- [Cinc.] Decidir si aplicar la distribución C y elegir entre los nombres Cinc, Traça y Barem · empezada por Codex · 2026-11-09
+- [Cinc.] Elegir entre los nombres Cinc, Traça y Barem (propuestas en `prototipos/identidad/`) · empezada por Codex · 2026-11-09
+- [Cinc.] Revisar en el iPhone el nuevo diseño «Panel de curso» (versión 3.0) y pedir los ajustes que hagan falta · empezada por Claude Code · 2026-11-10
 
 ## Historial
 
@@ -21,6 +22,8 @@
 2026-11-10 00:09 · Codex · Cinc. · Pedido: buscar nombres mejores y trabajar más los iconos del logo · Hecho: nueva comparación con Cinc, Traça y Barem; tres símbolos SVG originales redibujados para conservar la misma forma en cada tamaño; documentación y capturas actualizadas · Pendiente: Cristian elige nombre e identidad
 
 2026-11-10 00:13 · Codex · Cinc. · Pedido: revisar y pulir las propuestas de nombre y los iconos · Hecho: símbolos afinados y comparativa visual verificada en claro/oscuro; se retiraron los conceptos anteriores y se actualizaron las referencias del proyecto · Pendiente: Cristian elige nombre e identidad
+
+2026-11-10 00:28 · Claude Code · Cinc. · Pedido: aplicar a la app real el prototipo C («Panel de curso») · Hecho: nueva estructura en index.html (media y próxima fecha arriba, módulos junto a la agenda, detalle con las notas en una sola lista), styles.css reescrito con acento verde azulado y contrastes de 4,5:1 o más, app.js adaptado sin quitar funciones (sincronizar, copia, ¿cuánto necesito?, reparto, mínimos, ciclo); versión 3.0 y caché cinc-v34; 47 pruebas en verde y clics comprobados. Las capturas de 390 px salían recortadas porque Chrome sin ventana no baja de 500 px (anotado en CONTEXTO.md) · Pendiente: Cristian lo revisa en el iPhone
 
 ## Resumen
 
