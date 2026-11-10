@@ -30,7 +30,7 @@ Web: https://cristianvalentinmazilumoya.github.io/Cinc./
 8. **Deshacer:** al borrar una nota, un módulo o un curso sale abajo «Deshacer» durante 8 segundos.
 9. **Acerca de Cinc** (abajo del todo): versión, dónde se guardan los datos, cómo se calculan las medias y enlace a las pruebas.
 
-Las flechas ← → del detalle de un módulo cambian su orden dentro del curso.
+Las flechas ← → del detalle de un módulo abren el módulo anterior o el siguiente. Para cambiar el orden de los módulos, arrastra su tarjeta y suéltala sobre otra.
 
 Al cargar una copia o unos módulos, se comprueba cada dato (notas de 0 a 10, porcentajes, fechas, módulos que existen…). Si algo no es válido, no se carga nada y se dice qué falla.
 

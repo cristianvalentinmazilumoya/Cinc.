@@ -3,7 +3,7 @@
 // ============================================================
 
 // Versión de la app (sale en «Acerca de Cinc»)
-const VERSION = '2.1';
+const VERSION = '2.2';
 
 // Dónde se guardan los datos (localStorage del navegador)
 const CLAVE = 'cinc-datos';
@@ -308,6 +308,7 @@ function pintarTarjetas() {
     boton.type = 'button';
     boton.className = 'tarjeta';
     boton.dataset.id = m.id;
+    boton.draggable = true;   // se puede arrastrar para cambiar el orden
     if (m.id === idSeleccionado) boton.classList.add('seleccionada');
     boton.setAttribute('aria-pressed', m.id === idSeleccionado);
 
@@ -402,14 +403,20 @@ function pintarDetalle() {
     </tr>`;
   }).join('');
 
+  // Posición del módulo en la lista, para desactivar las flechas en los extremos
+  const visibles = modulosVisibles();
+  const posicion = visibles.findIndex(x => x.id === m.id);
+
   detalle.innerHTML = `
     <div class="detalle-cabecera">
       <h2>${escapar(m.nombre)}</h2>
       <div class="detalle-botones">
-        <button type="button" class="boton boton-icono" data-accion="mover-antes"
-                aria-label="Mover el módulo antes" title="Mover antes">←</button>
-        <button type="button" class="boton boton-icono" data-accion="mover-despues"
-                aria-label="Mover el módulo después" title="Mover después">→</button>
+        <button type="button" class="boton boton-icono" data-accion="modulo-anterior"
+                aria-label="Ver el módulo anterior" title="Módulo anterior"
+                ${posicion === 0 ? 'disabled' : ''}>←</button>
+        <button type="button" class="boton boton-icono" data-accion="modulo-siguiente"
+                aria-label="Ver el módulo siguiente" title="Módulo siguiente"
+                ${posicion === visibles.length - 1 ? 'disabled' : ''}>→</button>
         <button type="button" class="boton" data-accion="editar-modulo">Editar módulo</button>
       </div>
     </div>
@@ -652,16 +659,30 @@ function pintarCiclo() {
 
 // ---------- Orden de los módulos ----------
 
-// Mueve el módulo seleccionado un puesto antes (-1) o después (+1) dentro de su curso
-function moverModulo(direccion) {
-  const actual = datos.modulos.find(m => m.id === idSeleccionado);
-  const delCurso = datos.modulos.filter(m => m.cursoId === actual.cursoId);
-  const vecino = delCurso[delCurso.indexOf(actual) + direccion];
+// Las flechas del detalle abren el módulo anterior (-1) o el siguiente (+1)
+function irAModuloVecino(direccion) {
+  const visibles = modulosVisibles();
+  const posicion = visibles.findIndex(m => m.id === idSeleccionado);
+  const vecino = visibles[posicion + direccion];
   if (!vecino) return;   // ya es el primero o el último
 
-  const i = datos.modulos.indexOf(actual);
-  const j = datos.modulos.indexOf(vecino);
-  [datos.modulos[i], datos.modulos[j]] = [datos.modulos[j], datos.modulos[i]];
+  idSeleccionado = vecino.id;
+  pintarTarjetas();
+  pintarDetalle();
+}
+
+// Al soltar una tarjeta sobre otra, el módulo arrastrado pasa al sitio de la otra
+function moverModuloA(idOrigen, idDestino) {
+  if (idOrigen === idDestino) return;
+  const origen = datos.modulos.find(m => m.id === idOrigen);
+  const destino = datos.modulos.find(m => m.id === idDestino);
+  if (!origen || !destino) return;
+
+  const ibaAntes = datos.modulos.indexOf(origen) < datos.modulos.indexOf(destino);
+  datos.modulos.splice(datos.modulos.indexOf(origen), 1);   // quitarlo de su sitio
+  // Si se arrastra hacia delante, queda detrás del destino; si es hacia atrás, delante
+  const nuevoSitio = datos.modulos.indexOf(destino) + (ibaAntes ? 1 : 0);
+  datos.modulos.splice(nuevoSitio, 0, origen);
   guardar();
   pintarTodo();
 }
@@ -1306,6 +1327,40 @@ document.getElementById('modulos').addEventListener('click', evento => {
   }
 });
 
+// Arrastrar una tarjeta sobre otra para cambiar el orden de los módulos
+const rejillaModulos = document.getElementById('modulos');
+let idArrastrado = null;
+
+rejillaModulos.addEventListener('dragstart', evento => {
+  const tarjeta = evento.target.closest('.tarjeta[data-id]');
+  if (!tarjeta) return;
+  idArrastrado = tarjeta.dataset.id;
+  evento.dataTransfer.effectAllowed = 'move';
+  evento.dataTransfer.setData('text/plain', idArrastrado);   // Firefox lo necesita para arrastrar
+  tarjeta.classList.add('arrastrando');
+});
+
+rejillaModulos.addEventListener('dragover', evento => {
+  const tarjeta = evento.target.closest('.tarjeta[data-id]');
+  if (!tarjeta || !idArrastrado) return;
+  evento.preventDefault();   // sin esto no se puede soltar aquí
+  rejillaModulos.querySelectorAll('.destino').forEach(t => t.classList.remove('destino'));
+  if (tarjeta.dataset.id !== idArrastrado) tarjeta.classList.add('destino');
+});
+
+rejillaModulos.addEventListener('drop', evento => {
+  const tarjeta = evento.target.closest('.tarjeta[data-id]');
+  if (!tarjeta || !idArrastrado) return;
+  evento.preventDefault();
+  moverModuloA(idArrastrado, tarjeta.dataset.id);
+});
+
+rejillaModulos.addEventListener('dragend', () => {
+  idArrastrado = null;
+  rejillaModulos.querySelectorAll('.arrastrando, .destino')
+    .forEach(t => t.classList.remove('arrastrando', 'destino'));
+});
+
 // Detalle: editar el módulo, añadir una nota o editar una fila
 const detalle = document.getElementById('detalle');
 
@@ -1314,8 +1369,8 @@ detalle.addEventListener('click', evento => {
   const fila = evento.target.closest('.fila-nota');
 
   if (boton && boton.dataset.accion === 'editar-modulo') abrirModulo(idSeleccionado);
-  else if (boton && boton.dataset.accion === 'mover-antes') moverModulo(-1);
-  else if (boton && boton.dataset.accion === 'mover-despues') moverModulo(1);
+  else if (boton && boton.dataset.accion === 'modulo-anterior') irAModuloVecino(-1);
+  else if (boton && boton.dataset.accion === 'modulo-siguiente') irAModuloVecino(1);
   else if (boton && boton.dataset.accion === 'nueva-nota-modulo') abrirNota(null, idSeleccionado);
   else if (fila) abrirNota(fila.dataset.id);
 });

@@ -7,7 +7,7 @@
   --borde: #E1E7EE;
   --acento: #16263D;   /* azul noche del logo */
   --sobre-acento: #FFFFFF;   /* texto encima del acento */
-  --punto: #F2A93B;    /* el punto naranja del logo */
+  --punto: #E0B23B;    /* amarillo mostaza: punto del título, actividades y foco */
   --pista: #E6ECF2;
   --esqueleto: #E9EEF3;
 
@@ -138,6 +138,11 @@ h1 .punto { color: var(--punto); }
 .tarjeta:hover { transform: translateY(-2px); }
 .tarjeta:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
 .tarjeta.seleccionada { border-color: var(--acento); }
+
+/* Arrastrar tarjetas para cambiar el orden */
+.tarjeta[draggable="true"] { cursor: grab; }
+.tarjeta.arrastrando { opacity: .4; }
+.tarjeta.destino { border-style: dashed; border-color: var(--punto); }
 
 .tarjeta-arriba {
   display: flex;
@@ -863,6 +868,8 @@ h1 .punto { color: var(--punto); }
   padding: 8px 11px;
   line-height: 1;
 }
+
+.boton-icono:disabled { opacity: .4; cursor: default; }
 
 /* ---------- Acerca de ---------- */
 .lista-acerca {
