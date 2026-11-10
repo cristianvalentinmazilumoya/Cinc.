@@ -3,7 +3,7 @@
 // ============================================================
 
 // Versión de la app (sale en «Acerca de Cinc»)
-const VERSION = '3.0';
+const VERSION = '2.1';
 
 // Dónde se guardan los datos (localStorage del navegador)
 const CLAVE = 'cinc-datos';
@@ -260,7 +260,6 @@ function barra(nota, color = nivel(nota)) {
           </div>`;
 }
 
-// Panel de arriba: la media del curso (o del ciclo) y cómo se ha calculado
 function pintarResumen() {
   const resumen = document.getElementById('resumen');
   const visibles = modulosVisibles();
@@ -268,13 +267,6 @@ function pintarResumen() {
   const notas = visibles.reduce((total, m) => total + m.numNotas, 0);
   const conNota = visibles.filter(m => m.media !== null).length;
   const ciclo = enCiclo();
-
-  document.getElementById('panel-curso').hidden = visibles.length === 0;
-  document.getElementById('etiqueta-media').textContent =
-    ciclo ? 'Nota del ciclo' : `Media de ${cursoActivo().nombre}`;
-  const cifra = document.getElementById('media-curso');
-  cifra.textContent = conNota === 0 ? '—' : formatear(curso.media);
-  cifra.className = `cifra num ${conNota === 0 ? 'color-sin' : ''}`;
 
   if (visibles.length === 0) {
     resumen.textContent = 'Tus notas, siempre a mano.';
@@ -297,23 +289,16 @@ function pintarResumen() {
       tipoMedia += '<span class="resumen-nota">Para aprobar el ciclo hay que aprobar todos sus módulos.</span>';
     }
 
+    const titulo = ciclo ? 'Nota del ciclo' : `Media de ${escapar(cursoActivo().nombre)}`;
     const cursos = ciclo ? ` de <strong class="num">${datos.cursos.length}</strong> cursos` : '';
     resumen.innerHTML =
-      `Con <strong class="num">${notas}</strong> ${notas === 1 ? 'nota puesta' : 'notas puestas'} en ` +
-      `<strong class="num">${conNota}</strong> ${conNota === 1 ? 'módulo' : 'módulos'}${cursos}.` + tipoMedia;
+      `${titulo} <strong class="num">${formatear(curso.media)}</strong> con ` +
+      `<strong class="num">${notas}</strong> ${notas === 1 ? 'nota puesta' : 'notas puestas'} en ` +
+      `<strong class="num">${conNota}</strong> ${conNota === 1 ? 'módulo' : 'módulos'}${cursos}. ` +
+      (ciclo ? 'Toca un curso para ver sus módulos.' : 'Toca un módulo para ver todas sus notas.') + tipoMedia;
   }
 }
 
-// «6 notas · 2 pendientes» debajo del nombre de cada módulo
-function textoNotasModulo(m) {
-  if (m.pendiente) return 'Falta el reparto exámenes / actividades';
-  const pendientes = m.actividades.filter(a => a.nota === null).length;
-  const partes = [`${m.numNotas} ${m.numNotas === 1 ? 'nota' : 'notas'}`];
-  if (pendientes > 0) partes.push(`${pendientes} ${pendientes === 1 ? 'pendiente' : 'pendientes'}`);
-  return partes.join(' · ');
-}
-
-// Lista de módulos del curso: una fila por módulo, con su media a la derecha
 function pintarTarjetas() {
   const contenedor = document.getElementById('modulos');
   contenedor.innerHTML = '';
@@ -321,31 +306,40 @@ function pintarTarjetas() {
   for (const m of modulosVisibles()) {
     const boton = document.createElement('button');
     boton.type = 'button';
-    boton.className = 'fila-modulo';
+    boton.className = 'tarjeta';
     boton.dataset.id = m.id;
     if (m.id === idSeleccionado) boton.classList.add('seleccionada');
     boton.setAttribute('aria-pressed', m.id === idSeleccionado);
 
     const bajoMinimo = m.bajoMinimo.length > 0;
     const color = bajoMinimo ? 'baja' : nivel(m.media);
-    let media;
-    if (m.media === null) {
-      media = `<span class="media-fila sin-nota ${m.pendiente ? 'color-media' : 'color-sin'}">${m.pendiente ? 'Pendiente' : 'Sin nota'}</span>`;
-    } else {
-      media = `<span class="media-fila num color-${color}">${formatear(m.media)}</span>
-        ${bajoMinimo ? '<span class="aviso-fila color-baja">Bajo el mínimo</span>' : barra(m.media, color)}`;
-    }
+    const media = m.media === null
+      ? `<div class="media-grande sin-nota color-sin">${m.pendiente ? 'Pendiente' : 'Sin nota'}</div>`
+      : `<div class="media-grande num color-${color}">${formatear(m.media)}</div>`;
+
+    let pastilla = valoracion(m.media);
+    if (m.pendiente) pastilla = 'Pendiente';
+    if (bajoMinimo) pastilla = 'Bajo el mínimo';
 
     boton.innerHTML = `
-      <span class="insignia">${escapar(m.sigla)}</span>
-      <span class="fila-modulo-texto">
-        <strong>${escapar(m.nombre)}</strong>
-        <small>${escapar(textoNotasModulo(m))}</small>
-      </span>
-      <span class="fila-modulo-media">${media}</span>`;
+      <div class="tarjeta-arriba">
+        <span class="sigla">${escapar(m.sigla)}</span>
+        <span class="pastilla ${bajoMinimo ? 'baja' : nivel(m.media)}">${pastilla}</span>
+      </div>
+      <div class="nombre-modulo">${escapar(m.nombre)}</div>
+      ${media}
+      ${barra(m.media, color)}`;
 
     contenedor.appendChild(boton);
   }
+
+  // Tarjeta para crear un módulo nuevo
+  const nueva = document.createElement('button');
+  nueva.type = 'button';
+  nueva.className = 'tarjeta tarjeta-nueva';
+  nueva.dataset.accion = 'nuevo-modulo';
+  nueva.innerHTML = '<span class="mas" aria-hidden="true">+</span> Módulo';
+  contenedor.appendChild(nueva);
 }
 
 function pintarDetalle() {
@@ -382,48 +376,48 @@ function pintarDetalle() {
     else if (!estado && a.faltaPorcentaje) estado = 'No cuenta en la media hasta que tenga porcentaje';
     else if (!estado && a.ceroPorCiento) estado = 'Vale 0 %: no cuenta en la media';
 
-    // Debajo del nombre: fecha · tipo · porcentaje · recuperación
     const detalles = [];
-    if (a.fecha) detalles.push(escapar(formatearFecha(a.fecha)));
-    detalles.push(`<span class="${a.tipo === 'Examen' ? 'examen' : ''}">${escapar(a.tipo)}</span>`);
-    if (porcentaje) detalles.push(porcentaje);
-    if (a.esRecuperacion) detalles.push(escapar(`Recuperación de «${a.nombreOriginal}»`));
+    if (a.fecha) detalles.push(formatearFecha(a.fecha));
+    if (a.esRecuperacion) detalles.push(`Recuperación de «${a.nombreOriginal}»`);
 
     return `
-    <li class="fila-nota ${noCuenta ? 'pendiente' : ''}" data-id="${a.id}" tabindex="0"
-        role="button" title="Editar esta nota">
-      <span class="nota-texto">
-        <strong>${escapar(a.actividad)}</strong>
-        <span class="detalle-nota">${detalles.join(' · ')}</span>
-        ${estado ? `<span class="nota-estado">${escapar(estado)}</span>` : ''}
-      </span>
-      <span class="nota-valor">
-        <span class="num ${a.nota === null ? 'color-sin' : 'color-' + nivel(a.nota)} ${a.recuperadaCon ? 'tachada' : ''}">${formatear(a.nota)}</span>
-        ${barra(a.nota)}
-      </span>
-    </li>`;
+    <tr class="fila-nota ${noCuenta ? 'pendiente' : ''}" data-id="${a.id}" tabindex="0"
+        title="Editar esta nota">
+      <td>
+        ${escapar(a.actividad)}
+        ${detalles.length > 0 ? `<span class="detalle-nota">${escapar(detalles.join(' · '))}</span>` : ''}
+        ${estado ? `<span class="estado-movil">${escapar(estado)}</span>` : ''}
+      </td>
+      <td>
+        <span class="${a.tipo === 'Examen' ? 'examen' : ''}">${escapar(a.tipo)}</span>
+        ${porcentaje}
+      </td>
+      <td>
+        <div class="celda-nota">
+          <span class="num ${a.nota === null ? '' : 'color-' + nivel(a.nota)} ${a.recuperadaCon ? 'tachada' : ''}">${formatear(a.nota)}</span>
+          ${barra(a.nota)}
+        </div>
+      </td>
+      <td class="col-comentario comentario">${escapar(estado)}</td>
+    </tr>`;
   }).join('');
 
-  const colorMedia = m.bajoMinimo.length > 0 ? 'baja' : nivel(m.media);
   detalle.innerHTML = `
     <div class="detalle-cabecera">
-      <div class="detalle-titulo">
-        <p class="etiqueta">Módulo seleccionado · ${escapar(m.sigla)}</p>
-        <h2>${escapar(m.nombre)}</h2>
+      <h2>${escapar(m.nombre)}</h2>
+      <div class="detalle-botones">
+        <button type="button" class="boton boton-icono" data-accion="mover-antes"
+                aria-label="Mover el módulo antes" title="Mover antes">←</button>
+        <button type="button" class="boton boton-icono" data-accion="mover-despues"
+                aria-label="Mover el módulo después" title="Mover después">→</button>
+        <button type="button" class="boton" data-accion="editar-modulo">Editar módulo</button>
       </div>
-      <p class="detalle-media num color-${m.pendiente ? 'media' : colorMedia}">
-        ${m.pendiente ? 'Pendiente' : formatear(m.media)}${textoEvaluado(m.evaluadoModulo)}
-      </p>
-    </div>
-    <div class="detalle-botones">
-      <button type="button" class="boton boton-primario" data-accion="nueva-nota-modulo">+ Añadir nota</button>
-      <button type="button" class="boton" data-accion="editar-modulo">Editar módulo</button>
-      <button type="button" class="boton boton-icono" data-accion="mover-antes"
-              aria-label="Mover el módulo antes" title="Mover antes">←</button>
-      <button type="button" class="boton boton-icono" data-accion="mover-despues"
-              aria-label="Mover el módulo después" title="Mover después">→</button>
     </div>
     <dl class="datos">
+      <div class="dato">
+        <dt>Media del módulo</dt>
+        <dd class="num color-${m.bajoMinimo.length > 0 ? 'baja' : nivel(m.media)}">${m.pendiente ? 'Pendiente' : formatear(m.media)}${textoEvaluado(m.evaluadoModulo)}</dd>
+      </div>
       <div class="dato">
         <dt>Media de exámenes</dt>
         <dd class="num">${formatear(m.mediaExamenes)}${textoEvaluado(m.evaluadoExamenes)}</dd>
@@ -458,10 +452,20 @@ function pintarDetalle() {
     ${m.provisional ? `<p class="aviso aviso-modulo">${escapar(m.provisional)}</p>` : ''}
     ${m.avisos.map(aviso => `<p class="aviso aviso-modulo">${escapar(aviso)}</p>`).join('')}
     ${htmlNecesito(m)}
-    <h3 class="titulo-notas">Notas</h3>
-    <ul class="lista-notas">
-      ${filas || '<li class="vacio">Aún no hay notas en este módulo.</li>'}
-    </ul>`;
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Tipo</th>
+          <th>Nota</th>
+          <th class="col-comentario">Estado / comentario</th>
+        </tr>
+      </thead>
+      <tbody>${filas || '<tr><td colspan="4" class="vacio">Aún no hay notas en este módulo.</td></tr>'}</tbody>
+    </table>
+    <button type="button" class="boton boton-primario anadir-en-modulo" data-accion="nueva-nota-modulo">
+      + Añadir nota de ${escapar(m.sigla)}
+    </button>`;
 }
 
 // Recuadro «¿Cuánto necesito?» de un módulo
@@ -547,39 +551,19 @@ function archivoCalendario() {
 }
 
 // Próximas fechas: notas con fecha de hoy en adelante que aún no tienen nota
-// Se ve en la agenda (las 5 primeras) y la primera también en el panel de arriba
 function pintarProximas() {
-  const todas = notasProximas();
-  const proximas = todas.slice(0, 5);
+  const proximas = notasProximas().slice(0, 5);
 
-  // La agenda se ve siempre que el curso tenga módulos; si no hay fechas, lo dice
-  document.getElementById('proximas').hidden = modulosVisibles().length === 0;
-  document.getElementById('sin-proximas').hidden = proximas.length > 0;
-  document.getElementById('boton-calendario').hidden = proximas.length === 0;
+  document.getElementById('proximas').hidden = proximas.length === 0;
   document.getElementById('lista-proximas').innerHTML = proximas.map(({ a, m }) => `
     <li>
       <button type="button" class="proxima" data-modulo="${m.id}">
         <span class="proxima-fecha">${escapar(formatearFecha(a.fecha))}</span>
-        <span class="proxima-nombre"><strong>${escapar(a.actividad)}</strong>
-          <small>${escapar(m.sigla)} · <span class="${a.tipo === 'Examen' ? 'examen' : ''}">${escapar(a.tipo.toLowerCase())}</span></small></span>
+        <span class="proxima-nombre"><strong>${escapar(m.sigla)}</strong> · ${escapar(a.actividad)}
+          <span class="${a.tipo === 'Examen' ? 'examen' : ''}">(${escapar(a.tipo.toLowerCase())})</span></span>
         <span class="proxima-cuando">${cuandoEs(a.fecha)}</span>
       </button>
     </li>`).join('');
-
-  // Panel de arriba: solo la más cercana
-  const panel = document.getElementById('panel-proxima');
-  if (todas.length === 0) {
-    panel.innerHTML = `<p class="etiqueta">Próxima fecha</p>
-      <p class="proxima-grande color-sin">Sin fechas</p>
-      <p class="resumen">Pon fecha a tus exámenes y entregas para verlos aquí.</p>`;
-  } else {
-    const { a, m } = todas[0];
-    panel.innerHTML = `<p class="etiqueta">Próxima fecha · ${cuandoEs(a.fecha)}</p>
-      <button type="button" class="proxima-panel" data-modulo="${m.id}">
-        <span class="proxima-grande">${escapar(formatearFecha(a.fecha))}</span>
-        <span class="resumen">${escapar(a.actividad)} · ${escapar(m.sigla)}</span>
-      </button>`;
-  }
 }
 
 // Aviso de arriba. «tipo» sirve para saber qué aviso es al cerrarlo.
@@ -651,17 +635,16 @@ function pintarCiclo() {
     const media = mediaDelCurso(suyos).media;
     const conMedia = suyos.filter(m => m.media !== null).length;
     return `
-      <button type="button" class="fila-modulo" data-curso="${c.id}">
-        <span class="insignia">${escapar(c.nombre.slice(0, 4))}</span>
-        <span class="fila-modulo-texto">
-          <strong>${escapar(c.nombre)}</strong>
-          <small>${suyos.length} ${suyos.length === 1 ? 'módulo' : 'módulos'}, ${conMedia} con media · ${valoracion(media)}</small>
-        </span>
-        <span class="fila-modulo-media">
-          ${media === null
-            ? '<span class="media-fila sin-nota color-sin">Sin nota</span>'
-            : `<span class="media-fila num color-${nivel(media)}">${formatear(media)}</span>${barra(media)}`}
-        </span>
+      <button type="button" class="tarjeta" data-curso="${c.id}">
+        <div class="tarjeta-arriba">
+          <span class="sigla">${escapar(c.nombre)}</span>
+          <span class="pastilla ${nivel(media)}">${valoracion(media)}</span>
+        </div>
+        <div class="nombre-modulo">${suyos.length} ${suyos.length === 1 ? 'módulo' : 'módulos'}, ${conMedia} con media</div>
+        ${media === null
+          ? '<div class="media-grande sin-nota color-sin">Sin nota</div>'
+          : `<div class="media-grande num color-${nivel(media)}">${formatear(media)}</div>`}
+        ${barra(media)}
       </button>`;
   }).join('');
 }
@@ -1309,20 +1292,19 @@ entradaArchivo.addEventListener('change', () => {
   entradaArchivo.value = '';   // para poder elegir el mismo archivo otra vez
 });
 
-// Lista de módulos: al tocar uno, se ve su detalle
+// Tarjetas: seleccionar un módulo o crear uno nuevo
 document.getElementById('modulos').addEventListener('click', evento => {
-  const fila = evento.target.closest('.fila-modulo');
-  if (!fila) return;
-  idSeleccionado = fila.dataset.id;
-  pintarTarjetas();
-  pintarDetalle();
-  // En el móvil el detalle queda debajo de todo: se baja hasta él
-  if (window.matchMedia('(max-width: 900px)').matches) {
-    document.getElementById('detalle').scrollIntoView({ behavior: 'smooth' });
+  const tarjeta = evento.target.closest('.tarjeta');
+  if (!tarjeta) return;
+
+  if (tarjeta.dataset.accion === 'nuevo-modulo') {
+    abrirModulo(null);
+  } else {
+    idSeleccionado = tarjeta.dataset.id;
+    pintarTarjetas();
+    pintarDetalle();
   }
 });
-
-document.getElementById('boton-nuevo-modulo').addEventListener('click', () => abrirModulo(null));
 
 // Detalle: editar el módulo, añadir una nota o editar una fila
 const detalle = document.getElementById('detalle');
@@ -1351,24 +1333,15 @@ document.getElementById('boton-calendario').addEventListener('click', () => {
   descargarArchivo(archivoCalendario());
 });
 
-// Próximas fechas (agenda y panel de arriba): al tocar una, se abre su módulo.
-// Si es de otro curso, se cambia a ese curso.
-function abrirProxima(evento) {
-  const boton = evento.target.closest('[data-modulo]');
+// Próximas fechas: al tocar una, se abre su módulo
+document.getElementById('lista-proximas').addEventListener('click', evento => {
+  const boton = evento.target.closest('.proxima');
   if (!boton) return;
-  const modulo = modulos.find(m => m.id === boton.dataset.modulo);
-  if (!modulo) return;
-  idSeleccionado = modulo.id;
-  if (enCiclo() || modulo.cursoId !== datos.cursoActual) {
-    datos.cursoActual = modulo.cursoId;
-    guardar();
-  }
-  pintarTodo();
+  idSeleccionado = boton.dataset.modulo;
+  pintarTarjetas();
+  pintarDetalle();
   detalle.scrollIntoView({ behavior: 'smooth' });
-}
-
-document.getElementById('lista-proximas').addEventListener('click', abrirProxima);
-document.getElementById('panel-proxima').addEventListener('click', abrirProxima);
+});
 
 detalle.addEventListener('keydown', evento => {
   const fila = evento.target.closest('.fila-nota');
